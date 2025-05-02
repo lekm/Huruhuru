@@ -1,5 +1,9 @@
+# app.py
+# Inject pysqlite3 before any other imports that might load sqlite3
+import _inject_pysqlite
+
 import os
-import sqlite3
+import sqlite3 # Now this should refer to the injected pysqlite3
 from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g
 import requests
 import click

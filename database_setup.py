@@ -1,18 +1,7 @@
 # database_setup.py
 import os
 import sys
-
-# Try importing pysqlite3 first, falling back to standard sqlite3
-try:
-    import pysqlite3 as sqlite3
-    print("Using pysqlite3 library.")
-except ImportError:
-    try:
-        import sqlite3
-        print("Using standard sqlite3 library.")
-    except ImportError:
-        print("FATAL ERROR: No sqlite3 module found (standard or pysqlite3). Please ensure pysqlite3-binary is installed or Python includes SQLite3 support.")
-        sys.exit(1)
+import sqlite3 # Standard import should now work due to injection
 
 WORD_LIST_FILES = {
     'common': 'words_common.txt',
