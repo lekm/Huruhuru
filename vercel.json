@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "50mb" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "build": {
+    "env": {
+      "FLASK_APP": "app.py"
+    },
+    "commands": [
+      "echo 'Vercel build starting...'",
+      "pip install --upgrade pip",
+      "pip install -r requirements.txt",
+      "echo 'Running wordlist generation...'",
+      "python3 generate_wordlists.py",
+      "echo 'Initializing database...'",
+      "python3 -m flask init-db",
+      "echo 'Build commands finished.'"
+    ]
+  }
+} 

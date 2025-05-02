@@ -1,0 +1,583 @@
+/* Basic styling */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a; /* Dark background for letterboxing */
+    color: #333;
+    /* Center the aspect ratio wrapper */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+h1 {
+    /* Rule no longer needed */
+}
+
+/* Restore wrapper */
+.aspect-ratio-wrapper {
+    aspect-ratio: 9 / 16;
+    max-height: 98vh; /* Use slightly more height */
+    max-width: calc(98vh * (9 / 16));
+
+    /* Fallback attempt */
+    width: auto;
+    height: 98vh;
+
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    background-color: #ffffff; /* Background now on wrapper */
+}
+
+/* Game panel fills wrapper, uses flex column */
+.game-panel {
+    width: 100%;
+    height: 100%;
+    padding: 3vh 15px 15px 15px; /* Use vh for top padding */
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    overflow: hidden; /* Prevent internal scroll */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Remove general child selector spacing */
+/* Adjust spacing/sizing of children */
+.game-info {
+    display: flex; /* Use Flexbox */
+    justify-content: space-around; /* Distribute items */
+    align-items: center; /* Align items vertically */
+    /* Removed grid properties */
+    gap: 0; /* Remove grid gap */
+    width: 100%; /* Span width within parent */
+    margin-bottom: 20px; /* Increase spacing below */
+    padding-bottom: 15px; /* Padding for border */
+    border-bottom: 1px solid #e9ecef; /* Subtle bottom border */
+    text-align: center;
+    /* Styles below are fine */
+    border: none;
+    box-shadow: none;
+    background: none;
+    padding: 0 0 15px 0; /* Only bottom padding */
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 10px; /* Horizontal padding */
+    position: relative; /* For pseudo-element border */
+}
+
+/* Add vertical separator */
+.info-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 15%;
+    bottom: 15%;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+.info-label {
+    font-size: 0.75em;
+    color: #6c757d;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.info-value {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #343a40;
+}
+
+/* Removed specific styles for score/rank */
+/* #score, #rank { ... } */
+
+.hive-container {
+    max-width: 300px; /* Keep a max pixel size */
+    width: 75%; /* Relative width */
+    margin: 30px auto 60px auto; /* Keep 30px top, increase bottom to 60px */
+    flex-shrink: 0;
+}
+
+#message-area {
+    min-height: 1.5em;
+    margin-bottom: 2vh; /* vh spacing */
+    font-weight: bold;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.current-guess-display {
+    min-height: 30px;
+    font-size: 1.8em;
+    font-weight: 600;
+    margin: 0 auto 2vh auto; /* vh spacing */
+    padding-bottom: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    letter-spacing: 3px;
+    cursor: text;
+    outline: none;
+    flex-shrink: 0;
+}
+
+.controls {
+    margin-bottom: 3vh; /* vh spacing */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.controls button {
+     margin-left: 0; /* Remove left margin */
+}
+
+.found-words {
+    /* flex-grow: 0; */ /* No longer growing */
+    min-height: auto;
+    overflow: visible;
+    margin-bottom: 15px; /* Space before actions */
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    text-align: center; /* Center the button */
+    flex-shrink: 0;
+}
+
+/* Removed specific styles for #show-found-words-button */
+
+/* Base Button Styles - Apply to the modal button too */
+.controls button,
+.game-actions button,
+#show-found-words-button { /* Added button to base style */
+    padding: 10px 18px;
+    margin-left: 8px;
+    cursor: pointer;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+/* Ensure first button in controls doesn't have left margin */
+.controls button:first-child,
+#show-found-words-button { /* Remove margin from this button too */
+     margin-left: 0;
+}
+
+
+.controls button:active,
+.game-actions button:active,
+#show-found-words-button:active {
+    transform: scale(0.98);
+}
+
+.controls button:focus-visible,
+.game-actions button:focus-visible,
+#show-found-words-button:focus-visible {
+     outline: 2px solid #0056b3;
+     outline-offset: 2px;
+}
+
+/* Assign a background color - let's reuse shuffle cyan */
+#show-found-words-button {
+     background-color: #17a2b8; /* Bootstrap cyan */
+}
+#show-found-words-button:hover {
+     background-color: #138496;
+}
+
+/* Remove old #found-words-list */
+#found-words-list {
+    /* Rules no longer needed */
+}
+
+.game-actions {
+    margin-top: auto; /* Push to bottom */
+    padding-top: 15px; /* Space above button */
+    margin-bottom: 0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Simplify media query */
+@media (max-width: 400px) {
+     .game-panel {
+        padding: 10px;
+    }
+     /* Removed game-info grid change */
+     #found-words-list {
+        column-count: 1;
+    }
+     .hive-container {
+        max-width: 240px;
+     }
+     .current-guess-display {
+        font-size: 1.6em;
+    }
+}
+
+/* Remove wider screen media query */
+
+/* --- Hive Styles --- */
+#hive-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.hive-cell-group {
+    cursor: pointer;
+}
+
+.hive-cell {
+    stroke: #666; /* Slightly softer stroke */
+    stroke-width: 1;
+    fill: #f0f0f0; /* Lighten outer cell color */
+    cursor: pointer;
+    transition: fill 0.2s ease;
+}
+
+.hive-cell.center {
+    fill: #fcc419; /* Darken center cell yellow slightly for contrast */
+}
+
+.hive-cell:hover {
+    fill: #cccccc; /* Lighten on hover */
+}
+
+.hive-cell.center:hover {
+    fill: #fbc02d; /* Lighten center on hover */
+}
+
+.hive-cell-group:hover .hive-cell.outer {
+    fill: #e0e0e0; /* Adjust hover color */
+}
+
+.hive-cell-group:hover .hive-cell.center {
+    fill: #fca619; /* Adjust hover color */
+}
+
+.hive-letter {
+    font-size: 22px; /* Reduced size */
+    font-weight: 600; /* Bold */
+    text-anchor: middle;
+    dominant-baseline: central; /* Use central for more precise vertical centering */
+    fill: #212529; /* Darker text for contrast */
+    pointer-events: none; /* Allow clicks to pass through to the hexagon */
+}
+
+.center-letter {
+    /* No specific style needed unless different from outer */
+}
+
+/* --- End Hive Styles --- */
+
+.current-guess-display:focus {
+    box-shadow: 0 0 0 2px #80bdff; /* Add focus style */
+    border-radius: 3px; /* Optional rounding for focus */
+}
+
+.current-guess-display span {
+    color: #888; /* Placeholder color */
+}
+
+.message-valid {
+    color: green;
+}
+
+.message-invalid, .message-error {
+    color: red;
+}
+
+.message-finished {
+    color: blue;
+}
+
+.found-words h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.1em; /* Slightly smaller header */
+    font-weight: 600;
+    color: #495057; /* Slightly muted color */
+}
+
+/* --- Responsive adjustments --- */
+/* Styles for wider screens */
+@media (min-width: 768px) {
+     .game-panel {
+        padding: 20px; /* Restore larger padding */
+    }
+     /* Removed game-info column change */
+     #found-words-list {
+        column-count: 3; /* Back to 3 columns */
+    }
+    .hive-container {
+        max-width: 300px; /* Restore larger hive */
+    }
+    .current-guess-display {
+        font-size: 1.8em; /* Restore larger font */
+    }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+    z-index: 1000; /* Sit on top */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+}
+
+.modal-overlay.modal-open {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 450px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 600;
+    color: #333;
+}
+
+#modal-found-words-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    column-count: 2;
+    column-gap: 20px;
+}
+
+#modal-found-words-list li {
+    margin-bottom: 5px;
+    font-size: 0.95em;
+    cursor: pointer; /* Add cursor pointer to indicate clickability */
+}
+
+/* Style for the dynamically added definition */
+.definition-display {
+    display: block; /* Ensure it takes its own line */
+    margin-top: 4px; /* Space below the word */
+    padding-left: 10px; /* Indent the definition */
+    font-size: 0.85em; /* Smaller font for definition */
+    color: #555; /* Grey text */
+    font-style: italic;
+    cursor: default; /* Normal cursor for the text */
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 2.0em;
+    color: #6c757d;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.modal-close-button:hover {
+    color: #343a40;
+}
+
+.game-actions {
+    margin-top: auto; /* Push to bottom */
+    padding-top: 15px; /* Space above button */
+    margin-bottom: 0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Recent Words Ticker Styles */
+.recent-words-ticker {
+    height: 1.5em;
+    line-height: 1.5em;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-bottom: 10px;
+    /* background-color: #f8f9fa; */ /* Removed background */
+    border-radius: 4px;
+    padding: 0 10px;
+    color: #495057;
+    font-size: 0.9em;
+    text-align: right;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.recent-words-ticker span {
+    margin-left: 10px;
+    display: inline-block;
+}
+.recent-words-ticker span:first-child {
+    margin-left: 0;
+}
+.ticker-placeholder {
+    color: #adb5bd;
+}
+
+/* --- Re-add specific button background colors --- */
+
+#submit-guess {
+    background-color: #28a745; /* Bootstrap green */
+}
+#submit-guess:hover {
+    background-color: #218838;
+}
+
+#delete-char {
+    background-color: #ffc107; /* Bootstrap yellow */
+    color: #333; /* Darker text for yellow */
+}
+#delete-char:hover {
+    background-color: #e0a800;
+}
+
+#shuffle-letters {
+    background-color: #17a2b8; /* Bootstrap cyan */
+}
+#shuffle-letters:hover {
+    background-color: #138496;
+}
+
+#new-game-button {
+    background-color: #dc3545; /* Bootstrap red */
+    /* Use base padding/font size */
+}
+#new-game-button:hover {
+    background-color: #c82333;
+}
+
+/* --- Settings Modal Styles --- */
+
+/* Ensure the settings button fits in with others */
+#settings-button {
+    background-color: #6c757d; /* Bootstrap secondary grey */
+    margin-right: 8px; /* Space between settings and new game */
+}
+
+#settings-button:hover {
+    background-color: #5a6268;
+}
+
+/* Style the settings modal like the found words modal */
+#settings-modal {
+    /* Uses .modal-overlay styles */
+}
+
+.settings-modal-content {
+     /* Uses .modal-content styles */
+     /* Add specific overrides if needed */
+     max-height: 70vh; /* Prevent it getting too tall */
+}
+
+.settings-modal-content h2 {
+    /* Inherits from .modal-content h2 */
+}
+
+.settings-close-button {
+    /* Inherits from .modal-close-button */
+}
+
+/* Style the form inside the modal */
+.word-list-settings fieldset {
+    border: 1px solid #ced4da;
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+.word-list-settings legend {
+    font-weight: 600;
+    padding: 0 10px;
+    color: #495057;
+}
+
+.word-list-settings div {
+    margin-bottom: 10px;
+}
+
+.word-list-settings label {
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.word-list-settings input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Style the update button */
+.settings-update-button {
+    /* Inherit base button styles maybe? Or define specific */
+    display: block; /* Make it block level */
+    width: 100%; /* Full width inside fieldset */
+    margin-top: 15px;
+    padding: 10px 18px;
+    cursor: pointer;
+    background-color: #007bff; /* Bootstrap primary blue */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.settings-update-button:hover {
+    background-color: #0056b3;
+}
+
+.settings-update-button:active {
+    transform: scale(0.98);
+}
+
+.settings-update-button:focus-visible {
+     outline: 2px solid #0056b3;
+     outline-offset: 2px;
+}
+
+/* --- End Settings Modal Styles --- */
+
+/* Keep existing styles below */ 

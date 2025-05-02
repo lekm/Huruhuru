@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Bee NZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="aspect-ratio-wrapper">
+        <!-- Main wrapper -->
+        <div class="game-panel">
+            <div class="game-info"> <!-- Moved inside game-panel -->
+                <div class="info-item">
+                    <span class="info-label">Score</span>
+                    <span id="score" class="info-value">{{ score }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Rank</span>
+                    <span id="rank" class="info-value">{{ rank }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Possible</span>
+                    <span id="total-words" class="info-value">{{ total_words }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Remaining</span>
+                    <span id="words-remaining" class="info-value">{{ total_words - found_words|length }}</span>
+                </div>
+            </div>
+
+            <div id="message-area">
+                {{ message }}
+            </div>
+
+            <div class="hive-container">
+                <svg id="hive-svg" viewBox="0 -2 150 157">
+                    <!-- Define the hexagon shape centered at 0,0 with radius 30 -->
+                    <defs>
+                        <polygon id="hexagon" points="30,0 15,25.98 -15,25.98 -30,0 -15,-25.98 15,-25.98" />
+                    </defs>
+
+                    <!-- Center Hexagon -->
+                    {% set center_pos = (75, 77) %}
+                    <g class="hive-cell-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})">
+                        <use xlink:href="#hexagon" class="hive-cell center" data-letter="{{ center_letter }}">
+                            <title>{{ center_letter.upper() }}</title>
+                        </use>
+                        <text class="hive-letter center-letter" x="0" y="0">{{ center_letter.upper() }}</text>
+                    </g>
+
+                    <!-- Outer Hexagons - positions calculated for a 7-hex grid around center -->
+                    {% set positions = [
+                        (center_pos[0], center_pos[1] - 51.96),      
+                        (center_pos[0] + 45, center_pos[1] - 25.98), 
+                        (center_pos[0] + 45, center_pos[1] + 25.98), 
+                        (center_pos[0], center_pos[1] + 51.96),      
+                        (center_pos[0] - 45, center_pos[1] + 25.98), 
+                        (center_pos[0] - 45, center_pos[1] - 25.98)  
+                    ] %}
+                    {% for i in range(outer_letters|length) %}
+                        {% set pos = positions[i] %}
+                        {% set letter = outer_letters[i] %}
+                         <g class="hive-cell-group" transform="translate({{ pos[0] }}, {{ pos[1] }})">
+                            <use xlink:href="#hexagon" class="hive-cell outer" data-letter="{{ letter }}">
+                                <title>{{ letter.upper() }}</title>
+                            </use>
+                            <text class="hive-letter outer-letter" x="0" y="0">{{ letter.upper() }}</text>
+                        </g>
+                    {% endfor %}
+                </svg>
+            </div>
+
+            <div class="current-guess-display" id="current-guess-display" tabindex="0">
+                <!-- Current word built from clicks/keys -->
+                <span>&nbsp;</span> <!-- Placeholder to maintain height -->
+            </div>
+
+            <div class="controls">
+                <button id="submit-guess">Enter</button>
+                <button id="delete-char">Delete</button>
+                <button id="shuffle-letters">Shuffle</button>
+            </div>
+
+            <!-- Recent Words Ticker -->
+            <div class="recent-words-ticker" id="recent-words-ticker">
+                 <span class="ticker-placeholder">&nbsp;</span> <!-- Placeholder -->
+            </div>
+
+            <div class="found-words">
+                <!-- Replaced h2 and ul with a trigger button -->
+                <button id="show-found-words-button" class="button-secondary">
+                    Found Words (<span id="found-words-count">{{ found_words|length }}</span>)
+                </button>
+            </div>
+
+            <div class="game-actions">
+                <button id="settings-button" class="button-secondary">Settings</button>
+                <button id="new-game-button">New Game</button>
+            </div>
+
+        </div> <!-- End of game-panel -->
+
+        <!-- Found Words Modal Structure -->
+        <div id="found-words-modal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="modal-close-button">&times;</button>
+                <h2>Found Words</h2>
+                <ul id="modal-found-words-list">
+                    <!-- Words will be populated here by JS -->
+                    {% for word in found_words %}
+                     <li>{{ word }}</li> {# Keep initial population for no-JS or page load #}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Settings Modal Structure (Initially Hidden) -->
+        <div id="settings-modal" class="modal-overlay">
+            <div class="modal-content settings-modal-content">
+                <button class="modal-close-button settings-close-button">&times;</button>
+                <h2>Settings</h2>
+                <div class="word-list-settings">
+                    <form action="{{ url_for('update_settings') }}" method="post">
+                        <fieldset>
+                            <legend>Optional Word Lists:</legend>
+                            <div>
+                                <input type="checkbox" id="use_nz" name="use_nz" value="true" {% if use_nz %}checked{% endif %}>
+                                <label for="use_nz">NZ English</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="use_au" name="use_au" value="true" {% if use_au %}checked{% endif %}>
+                                <label for="use_au">AU English</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="use_tr" name="use_tr" value="true" {% if use_tr %}checked{% endif %}>
+                                <label for="use_tr">Te Reo Māori</label>
+                            </div>
+                            <button type="submit" class="button-secondary settings-update-button">Update Lists & New Game</button>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- End Settings Modal Structure -->
+
+    </div> <!-- End of aspect-ratio-wrapper -->
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 

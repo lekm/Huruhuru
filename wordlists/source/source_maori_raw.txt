@@ -1,0 +1,17 @@
+# --- Source Te Reo Māori Words (Raw) ---
+# Add Te Reo Māori words here.
+# One word per line, ideally lowercase.
+# Ensure UTF-8 encoding for macrons (e.g., ā, ē, ī, ō, ū).
+# The generate_wordlists.py script will clean, filter, handle macrons, and deduplicate against common words.
+# Example:
+aroha
+whānau
+kāinga
+mana
+awa
+moana
+maunga
+puku
+kai
+whare
+waka 
