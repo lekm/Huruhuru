@@ -5,6 +5,9 @@ set -e
 
 echo "Build script starting..."
 
+echo "Updating package list and installing SQLite dev libraries..."
+apt-get update -y && apt-get install -y libsqlite3-dev
+
 # Removed pip install commands - Vercel handles this based on requirements.txt
 # echo "Installing dependencies..."
 # pip install --upgrade pip
