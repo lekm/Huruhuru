@@ -5,9 +5,10 @@ set -e
 
 echo "Build script starting..."
 
-echo "Installing dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
+# Removed pip install commands - Vercel handles this based on requirements.txt
+# echo "Installing dependencies..."
+# pip install --upgrade pip
+# pip install -r requirements.txt
 
 echo "Running wordlist generation..."
 python3 generate_wordlists.py
