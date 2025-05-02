@@ -1,8 +1,19 @@
 import random
 import string
-import sqlite3
 from collections.abc import Iterable # Import Iterable
-import sys # For potential error exit
+import sys
+
+# Try importing pysqlite3 first, falling back to standard sqlite3
+try:
+    import pysqlite3 as sqlite3
+    print("spelling_bee: Using pysqlite3 library.")
+except ImportError:
+    try:
+        import sqlite3
+        print("spelling_bee: Using standard sqlite3 library.")
+    except ImportError:
+        print("spelling_bee: FATAL ERROR: No sqlite3 module found (standard or pysqlite3).")
+        sys.exit(1)
 
 MIN_WORD_LENGTH = 4
 
