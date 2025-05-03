@@ -1,18 +1,20 @@
 # app.py
 # Inject pysqlite3 before any other imports that might load sqlite3
-import _inject_pysqlite
+from .. import _inject_pysqlite
 
 import os
 import sqlite3 # Now this should refer to the injected pysqlite3
+import subprocess # Added for init-db check
+import sys # Added for init-db check
 from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g
 import requests
 import click
 from flask.cli import with_appcontext
 
 # Import game logic from spelling_bee module
-import spelling_bee
+from .. import spelling_bee
 # Import database setup function
-import database_setup
+from .. import database_setup
 # Import the normalization function
 from spelling_bee import normalize_word
 
@@ -21,15 +23,62 @@ app = Flask(__name__)
 # IMPORTANT: Set a strong SECRET_KEY environment variable in production (Vercel settings)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or-use-env')
 # --- Define Base Directory and Database Path ---
-# Get the absolute path to the directory containing app.py
-basedir = os.path.abspath(os.path.dirname(__file__))
-# Define the database path relative to app.py
-DATABASE = os.path.join(basedir, 'word_database.db') # <--- Use os.path.join
+# Get the absolute path to the directory containing api/index.py
+api_dir = os.path.abspath(os.path.dirname(__file__))
+# Get the project root directory (one level up from api_dir)
+basedir = os.path.dirname(api_dir)
+# Define the database path in the project root
+DATABASE = os.path.join(basedir, 'word_database.db') # <--- Path in root dir
 
-# --- Database Connection Handling (using Flask's g object) ---
-# Not strictly necessary for this app as connections are short-lived in
-# spelling_bee functions, but good practice if DB was used more directly here.
-# Sticking to passing DB path for simplicity now.
+# --- Database Initialization Check (Run during Vercel build) ---
+print(f"Script directory (api): {api_dir}")
+print(f"Project root directory: {basedir}")
+print(f"Checking for database at: {DATABASE}")
+
+# Check if the database file exists in the project root
+if not os.path.exists(DATABASE):
+    print("Database not found. Attempting to initialize via 'flask init-db'...")
+    try:
+        # Ensure Flask is installed and run the init-db command
+        # Using sys.executable ensures we use the Python Vercel prepared
+        # Use check=True to raise an error if the command fails
+        # Run from the project's root directory (basedir) where flask command expects to find modules
+        result = subprocess.run(
+            [sys.executable, "-m", "flask", "init-db"],
+            check=True,
+            cwd=basedir, # <--- Run from project root
+            capture_output=True,
+            text=True,
+            encoding='utf-8' # Explicitly set encoding
+        )
+        print("Flask init-db command completed.")
+        print(f"stdout:\n{result.stdout}")
+        print(f"stderr:\n{result.stderr}")
+        # Verify if the file was created
+        if os.path.exists(DATABASE):
+            print(f"Database file now exists at: {DATABASE}")
+        else:
+            # This would indicate a problem with your init-db command logic
+            print(f"Error: Database file still not found at {DATABASE} after init-db command.")
+            # Fail the build explicitly
+            sys.exit("Database initialization failed to create the file.")
+    except FileNotFoundError:
+         print(f"Error: '{sys.executable} -m flask' command not found. Is Flask installed correctly in requirements.txt?")
+         # Re-raise the exception to fail the build
+         raise
+    except subprocess.CalledProcessError as e:
+        print(f"Error running flask init-db: {e}")
+        print(f"Command stdout: {e.stdout}")
+        print(f"Command stderr: {e.stderr}")
+        # Re-raise the exception to fail the build
+        raise e
+    except Exception as e:
+        print(f"An unexpected error occurred during database initialization check: {e}")
+        # Re-raise the exception to fail the build
+        raise e
+else:
+    print("Database file found.")
+# --- End Database Initialization Check ---
 
 # --- Flask CLI Command for DB Initialization ---
 @click.command('init-db')
@@ -37,8 +86,8 @@ DATABASE = os.path.join(basedir, 'word_database.db') # <--- Use os.path.join
 def init_db_command():
     """Clear the existing data and create new tables."""
     try:
-        # Pass the absolute DATABASE path to the setup function
-        database_setup.init_db(DATABASE) # <--- Ensure init_db uses the path
+        # Pass the absolute DATABASE path (in root) to the setup function
+        database_setup.init_db(DATABASE)
         click.echo('Initialized the database.')
     except Exception as e:
         click.echo(f'Error initializing database: {e}')
@@ -62,6 +111,9 @@ def get_active_list_types_from_session():
 
 @app.route('/')
 def index():
+    # Optional: Add a runtime check just in case
+    if not os.path.exists(DATABASE):
+         return "Error: Database missing at runtime!", 500
     # Initialize default list preferences if not in session
     session.setdefault('use_nz', False)
     session.setdefault('use_au', False)
@@ -165,7 +217,7 @@ def handle_guess():
     is_pangram_found = False
 
     # Normalize the user's guess
-    normalized_guess = normalize_word(guess)
+    normalized_guess = spelling_bee.normalize_word(guess)
 
     # --- Validation Logic using Normalization Map --- START
     if len(guess) < spelling_bee.MIN_WORD_LENGTH:
