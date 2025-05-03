@@ -12,11 +12,15 @@ WORD_LIST_FILES = {
 MIN_WORD_LENGTH_SETUP = 4 # Use a distinct constant name during setup
 
 # Define the directory where the processed word list files are expected
-PROCESSED_WORDLIST_DIR = os.path.join('wordlists', 'processed')
+# PROCESSED_WORDLIST_DIR = os.path.join('wordlists', 'processed') # Old way
 
-def init_db(db_path='word_database.db', word_list_dir=PROCESSED_WORDLIST_DIR):
+def init_db(db_path='word_database.db'): # Keep default for direct script running
     """Initializes the SQLite database and populates it with words."""
     print(f"Initializing database at: {db_path}")
+    # Determine the directory containing the DB file (which is likely the project root)
+    db_dir = os.path.dirname(db_path)
+    # Assume wordlists directory is relative to the DB directory (project root)
+    word_list_dir = os.path.join(db_dir, 'wordlists', 'processed') # <--- Construct path relative to db_path
     print(f"Looking for processed word lists in: {word_list_dir}") # Add log
     conn = None # Initialize conn to None
     try:
@@ -36,6 +40,7 @@ def init_db(db_path='word_database.db', word_list_dir=PROCESSED_WORDLIST_DIR):
         # Populate table
         total_words_added = 0
         for list_type, filename in WORD_LIST_FILES.items():
+            # Use the calculated absolute path to word lists
             filepath = os.path.join(word_list_dir, filename)
             words_in_file = 0
             words_added_from_file = 0
@@ -75,4 +80,7 @@ def init_db(db_path='word_database.db', word_list_dir=PROCESSED_WORDLIST_DIR):
 if __name__ == "__main__":
     # Allows running this script directly, e.g., python database_setup.py
     # Assumes the script is run from the project root.
-    init_db() 
+    # Define default DB path relative to *this* script if run directly
+    script_dir = os.path.dirname(__file__)
+    default_db_path = os.path.join(script_dir, 'word_database.db')
+    init_db(default_db_path) 

@@ -20,7 +20,11 @@ app = Flask(__name__)
 # Read secret key from environment variable, with a fallback for local dev
 # IMPORTANT: Set a strong SECRET_KEY environment variable in production (Vercel settings)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or-use-env')
-DATABASE = 'word_database.db'
+# --- Define Base Directory and Database Path ---
+# Get the absolute path to the directory containing app.py
+basedir = os.path.abspath(os.path.dirname(__file__))
+# Define the database path relative to app.py
+DATABASE = os.path.join(basedir, 'word_database.db') # <--- Use os.path.join
 
 # --- Database Connection Handling (using Flask's g object) ---
 # Not strictly necessary for this app as connections are short-lived in
@@ -33,7 +37,8 @@ DATABASE = 'word_database.db'
 def init_db_command():
     """Clear the existing data and create new tables."""
     try:
-        database_setup.init_db(DATABASE)
+        # Pass the absolute DATABASE path to the setup function
+        database_setup.init_db(DATABASE) # <--- Ensure init_db uses the path
         click.echo('Initialized the database.')
     except Exception as e:
         click.echo(f'Error initializing database: {e}')
@@ -67,8 +72,11 @@ def index():
     if 'letters' not in session:
         print("No letters found in session, starting new game setup...")
         # Check if DB exists before proceeding
-        if not os.path.exists(DATABASE):
-             return "Error: Word database file not found. Please run 'flask init-db' command in the terminal.", 500
+        # Check if DB exists using the absolute path
+        if not os.path.exists(DATABASE): # <--- Check uses the absolute path
+             # Consider logging the path checked for easier debugging:
+             print(f"Database file not found at expected path: {DATABASE}")
+             return "Error: Word database file not found. Please check server logs.", 500 # More generic error
 
         active_list_types = get_active_list_types_from_session()
         if not active_list_types: # Should at least have 'common'
@@ -76,6 +84,7 @@ def index():
 
         try:
             # Call refactored functions from spelling_bee module
+            # Ensure functions called here use the absolute DATABASE path
             letters, center_letter = spelling_bee.choose_letters(DATABASE, active_list_types)
             # Ensure letters is a set for calculations, store as list in session
             letters_set = set(letters)
@@ -95,8 +104,9 @@ def index():
             print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(session['valid_solutions'])}, Map Size: {len(session['solution_map'])}, Total Score: {total_score}")
 
         except ConnectionError as e:
-             print(f"Database connection error during game setup: {e}")
-             return f"Error: Could not connect to the word database. {e}", 500
+             # Log the path attempted for connection if possible
+             print(f"Database connection error during game setup using path: {DATABASE}. Error: {e}")
+             return f"Error: Could not connect to the word database.", 500 # More generic error
         except RuntimeError as e:
             print(f"Error generating puzzle: {e}")
             # Provide a user-friendly message
