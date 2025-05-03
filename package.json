@@ -1,5 +1,5 @@
 {
   "scripts": {
-    "vercel-build": "echo '--- [vercel-build START] ---' && echo 'Initial CWD:' && pwd && echo 'Initial ls -la:' && ls -la && echo 'Running pip install...' && python3.12 -m pip install -r requirements.txt && echo 'Running flask init-db...' && python3.12 -m flask --app api.index:app init-db && echo 'CWD after init-db:' && pwd && echo 'ls -la after init-db:' && ls -la && echo 'Listing api/ directory contents:' && ls -la api/ && echo 'Creating dist directory...' && mkdir dist && echo 'Adding dummy file to dist...' && touch dist/.gitkeep && echo 'Final ls -la dist/:' && ls -la dist/ && echo 'Final ls -la root:' && ls -la && echo '--- [vercel-build END] ---'"
+    "vercel-build-python": "echo '--- [vercel-build-python START] ---' && echo 'Initial CWD:' && pwd && echo 'Running pip install...' && python3.12 -m pip install -r requirements.txt && echo 'Running flask init-db (TARGETING api/word_database.db)...' && python3.12 -m flask --app api.index:app init-db && echo 'Listing api/ directory contents:' && ls -la api/ && echo '--- [vercel-build-python END] ---'"
   }
 } 
