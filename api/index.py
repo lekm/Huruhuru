@@ -42,11 +42,23 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or
 def init_db_command():
     """Clear the existing data and create new tables."""
     try:
-        # Pass the absolute DATABASE path (in root) to the setup function
-        database_setup.init_db(DATABASE)
+        # Calculate the CORRECT path inside the 'api' directory
+        api_dir = os.path.abspath(os.path.dirname(__file__))
+        target_db_path = os.path.join(api_dir, 'word_database.db')
+
+        # Ensure the api directory exists (should already, but good practice)
+        os.makedirs(api_dir, exist_ok=True)
+        
+        print(f"--- [Flask init-db command] Target DB path: {target_db_path}") # Log the path being used
+
+        # Pass the CORRECT path (inside api/) to the setup function
+        database_setup.init_db(target_db_path)
         click.echo('Initialized the database.')
     except Exception as e:
         click.echo(f'Error initializing database: {e}')
+        # It might be helpful to log the full exception here for debugging Vercel
+        import traceback
+        traceback.print_exc()
 
 app.cli.add_command(init_db_command)
 
