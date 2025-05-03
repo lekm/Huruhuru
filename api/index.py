@@ -1,6 +1,6 @@
 # app.py
 # Inject pysqlite3 before any other imports that might load sqlite3
-from .. import _inject_pysqlite
+import _inject_pysqlite # Direct import
 
 import os
 import sqlite3 # Now this should refer to the injected pysqlite3
@@ -12,11 +12,11 @@ import click
 from flask.cli import with_appcontext
 
 # Import game logic from spelling_bee module
-from .. import spelling_bee
+import spelling_bee # Direct import
 # Import database setup function
-from .. import database_setup
+import database_setup # Direct import
 # Import the normalization function
-from spelling_bee import normalize_word
+# from spelling_bee import normalize_word # Can use spelling_bee.normalize_word
 
 app = Flask(__name__)
 # Read secret key from environment variable, with a fallback for local dev
