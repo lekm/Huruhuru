@@ -58,6 +58,10 @@ def choose_letters(db_path: str, active_list_types: list[str]):
         center_letter = random.choice(list(letters))
         letters_str = "".join(sorted(list(letters)))
 
+        # --- BEGIN DEBUG LOGGING ---
+        print(f"--- [DEBUG choose_letters Attempt {attempts}] Letters picked: {''.join(sorted(list(letters)))}, Center: {center_letter}")
+        # --- END DEBUG LOGGING ---
+
         # Query to check if a pangram exists for this specific letter set
         # This checks if any word exists that contains ONLY letters from the set,
         # contains all 7 distinct letters, and is in the active lists.
@@ -80,8 +84,9 @@ def choose_letters(db_path: str, active_list_types: list[str]):
             result = cursor.fetchone()
             if result:
                 # Found a letter set with at least one pangram
-                print(f"Found suitable letters after {attempts} attempts.")
-                print(f"Chosen letters (Center *): {''.join(sorted(list(letters))).replace(center_letter, f'{center_letter}*')}")
+                print(f"--- [DEBUG choose_letters] Found suitable letters after {attempts} attempts.")
+                # Print the final chosen letters again for clarity
+                print(f"--- [DEBUG choose_letters] Final chosen letters (Center *): {''.join(sorted(list(letters))).replace(center_letter, f'{center_letter}*')}")
                 conn.close()
                 return letters, center_letter
 
