@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python",
-      "config": {
-        "buildCommand": "python3.12 -m flask init-db"
-      }
+      "use": "@vercel/python"
     }
   ]
 } 
