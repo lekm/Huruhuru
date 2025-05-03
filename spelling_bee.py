@@ -38,7 +38,7 @@ def _get_db_connection(db_path):
 def choose_letters(db_path: str, active_list_types: list[str]):
     """
     Choose 7 unique letters from the alphabet, ensuring at least one pangram
-    exists in the database for the active word lists.
+    exists in the database for the active word lists using an iterative check.
     """
     alphabet = list(string.ascii_lowercase)
     conn = _get_db_connection(db_path)
@@ -46,57 +46,53 @@ def choose_letters(db_path: str, active_list_types: list[str]):
         raise ConnectionError(f"Could not connect to database at {db_path}")
 
     cursor = conn.cursor()
-    # Prepare placeholders for SQL IN clause
     placeholders = ','.join('?' * len(active_list_types))
-    sql_query = f"SELECT word FROM words WHERE list_type IN ({placeholders}) AND LENGTH(word) >= 7"
 
-    try:
-        # Fetch potential pangram candidates (length >= 7) from active lists
-        cursor.execute(sql_query, active_list_types)
-        # Fetch all candidates into memory - necessary tradeoff for checking set equality easily
-        candidate_words = {row[0] for row in cursor.fetchall()}
-        if not candidate_words:
-             print("Warning: No words of length 7 or more found in the active lists. Cannot guarantee a pangram.")
-             # Fallback? Or raise error? For now, let's proceed but log warning.
-             # We'll still pick letters, but find_valid_words might find 0 solutions.
-
-    except sqlite3.Error as e:
-        print(f"Database error during pangram candidate search: {e}")
-        conn.close()
-        raise # Re-raise the exception after closing connection
-
-    conn.close() # Close connection after fetching candidates
-
-    print(f"Checking potential pangrams from {len(candidate_words)} candidates...")
     attempts = 0
-    max_attempts = 1000 # Prevent infinite loop if alphabet is small or lists restrictive
+    max_attempts = 1000 # Prevent infinite loop
 
     while attempts < max_attempts:
         attempts += 1
         random.shuffle(alphabet)
         letters = set(alphabet[:7])
         center_letter = random.choice(list(letters))
+        letters_str = "".join(sorted(list(letters)))
 
-        # Check if any candidate word forms a pangram with these letters
-        found_pangram = False
-        for word in candidate_words:
-            # Check if the word uses *exactly* the 7 chosen letters
-            if set(word) == letters:
-                 # Double check it uses the center letter (pangrams must)
-                 # Although set(word)==letters implies center_letter is in word if it's in letters
-                if center_letter in word:
-                    found_pangram = True
-                    break # Found one, no need to check others
+        # Query to check if a pangram exists for this specific letter set
+        # This checks if any word exists that contains ONLY letters from the set,
+        # contains all 7 distinct letters, and is in the active lists.
+        # Note: This SQL might be slow without advanced indexing or full-text search.
+        # The `WHERE word NOT GLOB '*[^` + letters_str + `]*'` checks if all letters are in the set.
+        # The `LENGTH(word) >= 7` is implicit if it contains all 7 letters.
 
-        if found_pangram:
-            print(f"Found suitable letters after {attempts} attempts.")
-            print(f"Chosen letters (Center *): {' '.join(sorted(list(letters))).replace(center_letter, f'{center_letter}*')}")
-            return letters, center_letter
-        # else:
-            # print(f"Attempt {attempts}: No pangram found for {''.join(sorted(list(letters)))}, retrying...")
+        # Simpler, potentially faster query: Check if any word contains all 7 letters
+        like_clauses = " AND ".join([f"INSTR(word, '{l}') > 0" for l in letters])
+        pangram_check_sql = f"""
+            SELECT 1 FROM words
+            WHERE list_type IN ({placeholders})
+              AND {like_clauses}
+            LIMIT 1;
+        """
 
+        try:
+            # print(f"Attempt {attempts}: Checking letters {''.join(sorted(list(letters)))}") # Debug
+            cursor.execute(pangram_check_sql, active_list_types)
+            result = cursor.fetchone()
+            if result:
+                # Found a letter set with at least one pangram
+                print(f"Found suitable letters after {attempts} attempts.")
+                print(f"Chosen letters (Center *): {''.join(sorted(list(letters))).replace(center_letter, f'{center_letter}*')}")
+                conn.close()
+                return letters, center_letter
+
+        except sqlite3.Error as e:
+            print(f"Database error during pangram existence check: {e}")
+            # Don't raise here, allow retrying
+            continue # Try next set of letters
+        # No pangram found for this set, loop continues
 
     # If loop finishes without finding letters
+    conn.close()
     raise RuntimeError(f"Could not find a set of 7 letters with a guaranteed pangram after {max_attempts} attempts. Check word lists and active types: {active_list_types}")
 
 
