@@ -1,5 +1,0 @@
-{
-  "scripts": {
-    "vercel-build": "echo '--- Starting Vercel Build Script (@vercel/static-build) ---' && python3.12 -m pip install -r requirements.txt && python3.12 -m flask --app api.index:app init-db && echo '--- Finished Vercel Build Script (@vercel/static-build) ---'"
-  }
-} 
