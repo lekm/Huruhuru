@@ -1,11 +1,14 @@
 {
+  "version": 2,
   "builds": [
     {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "public" }
+    },
+    {
       "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "buildCommand": "echo '--- [BUILD STEP START] ---' && echo 'Initial CWD:' && pwd && echo 'Initial ls -la:' && ls -la && echo 'Running pip install...' && python3.12 -m pip install -r requirements.txt && echo 'Running flask init-db...' && python3.12 -m flask --app api.index:app init-db && echo 'CWD after init-db:' && pwd && echo 'ls -la after init-db:' && ls -la && echo 'Listing api/ directory contents:' && ls -la api/ && echo '--- [BUILD STEP END] ---'"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
