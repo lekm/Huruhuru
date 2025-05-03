@@ -37,6 +37,13 @@ def init_db(db_path='word_database.db'): # Keep default for direct script runnin
         conn.commit()
         print("Table 'words' created or already exists.")
 
+        # Create indexes for faster lookups
+        print("Creating indexes...")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_word ON words (word);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_list_type ON words (list_type);")
+        conn.commit()
+        print("Indexes created or already exist.")
+
         # Populate table
         total_words_added = 0
         for list_type, filename in WORD_LIST_FILES.items():
