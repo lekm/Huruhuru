@@ -5,9 +5,9 @@ import _inject_pysqlite # Direct import
 import os
 import sqlite3 # Now this should refer to the injected pysqlite3
 import subprocess # Added for init-db check
-import sys # Added for init-db check
+import sys # Added for init-db check, and runtime debugging
 import time # Added for timing
-from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g
+from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g, abort # Import abort
 import requests
 import click
 from flask.cli import with_appcontext
@@ -22,11 +22,15 @@ import database_setup # Direct import
 # --- Re-calculate paths needed by the app --- 
 api_dir = os.path.abspath(os.path.dirname(__file__))
 basedir = os.path.dirname(api_dir) # Project root
-# DATABASE_BUILD_PATH = os.path.join(basedir, 'word_database.db') # Original incorrect path used at runtime
-DATABASE_RUNTIME_PATH = "/var/task/word_database.db" # Absolute path in Vercel runtime
+# DATABASE = os.path.join(basedir, 'word_database.db') # Original incorrect path used at runtime
+# DATABASE_RUNTIME_PATH = "/var/task/word_database.db" # Absolute path in Vercel runtime
+# Let's try constructing the path relative to the runtime script location first
+DATABASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'word_database.db'))
 
 # --- Flask App Definition (Should happen AFTER DB check/init) ---
-print("--- Initializing Flask app ---")
+print(f"--- [RUNTIME] api/index.py START (PID: {os.getpid()}) ---")
+print(f"--- [RUNTIME] Python version: {sys.version}")
+print(f"--- [RUNTIME] Expecting database relative to script at: {DATABASE_PATH}")
 
 # --- Your Flask App Definition ---
 # Explicitly set template and static folder paths relative to the project root
@@ -77,8 +81,31 @@ def get_active_list_types_from_session():
 
 # --- Flask Routes ---
 
+@app.before_request
+def check_db():
+    print(f"--- [RUNTIME] before_request: Entering check_db for {request.path}")
+    # --- BEGIN DEBUG: List /var/task contents ---
+    runtime_task_dir = '/var/task'
+    print(f"--- [RUNTIME DEBUG] Listing contents of {runtime_task_dir}...")
+    try:
+        runtime_dir_listing = os.listdir(runtime_task_dir)
+        print(f"--- [RUNTIME DEBUG] Contents of {runtime_task_dir}: {sorted(runtime_dir_listing)}")
+    except Exception as e:
+        print(f"--- [RUNTIME DEBUG] ERROR listing {runtime_task_dir}: {e}")
+    # --- END DEBUG ---
+
+    # Runtime check using the constructed absolute path
+    print(f"--- [RUNTIME] Checking for DB at constructed path: {DATABASE_PATH}")
+    if not os.path.exists(DATABASE_PATH):
+         print(f"!!! RUNTIME CRITICAL ERROR: Database NOT FOUND at {DATABASE_PATH} !!!")
+         # Abort the request cleanly
+         abort(500, description=f"Internal Server Error: Database unavailable at {DATABASE_PATH}")
+    else:
+         print(f"--- [RUNTIME] Database FOUND at {DATABASE_PATH}")
+
 @app.route('/')
 def index():
+    print(f"--- [RUNTIME] Request received for {request.path} route ---")
     # REMOVED runtime check for DATABASE path
     # Initialize default list preferences if not in session
     session.setdefault('use_nz', False)
@@ -90,9 +117,9 @@ def index():
     if 'letters' not in session:
         print("No letters found in session, starting new game setup...")
         # Check if DB exists using the CORRECT runtime path
-        if not os.path.exists(DATABASE_RUNTIME_PATH):
+        if not os.path.exists(DATABASE_PATH):
              # Consider logging the path checked for easier debugging:
-             print(f"Database file not found at expected runtime path: {DATABASE_RUNTIME_PATH}")
+             print(f"Database file not found at expected runtime path: {DATABASE_PATH}")
              return "Error: Word database file not found. Please check server logs.", 500
 
         active_list_types = get_active_list_types_from_session()
@@ -101,9 +128,9 @@ def index():
 
         try:
             # Call refactored functions using the CORRECT runtime path
-            letters, center_letter = spelling_bee.choose_letters(DATABASE_RUNTIME_PATH, active_list_types)
+            letters, center_letter = spelling_bee.choose_letters(DATABASE_PATH, active_list_types)
             letters_set = set(letters)
-            valid_solutions, normalized_solution_map = spelling_bee.find_valid_words(DATABASE_RUNTIME_PATH, letters_set, center_letter, active_list_types)
+            valid_solutions, normalized_solution_map = spelling_bee.find_valid_words(DATABASE_PATH, letters_set, center_letter, active_list_types)
             total_score = spelling_bee.calculate_total_score(valid_solutions, letters_set)
 
             # Store game state in session (convert sets to lists for JSON compatibility)
@@ -119,7 +146,7 @@ def index():
 
         except ConnectionError as e:
              # Log the path attempted for connection if possible
-             print(f"Database connection error during game setup using path: {DATABASE_RUNTIME_PATH}. Error: {e}")
+             print(f"Database connection error during game setup using path: {DATABASE_PATH}. Error: {e}")
              return f"Error: Could not connect to the word database.", 500
         except RuntimeError as e:
             print(f"Error generating puzzle: {e}")
@@ -337,7 +364,7 @@ def get_definition(word):
 if __name__ == "__main__":
     # Check if DB exists on startup (optional, but helpful)
     # This check will likely use the path relative to where the script is run locally
-    local_dev_db_path = os.path.join(api_dir, 'word_database.db') # Path for local dev check
+    local_dev_db_path = os.path.join(os.path.dirname(__file__), 'word_database.db') # Path for local dev check
     if not os.path.exists(local_dev_db_path):
         print(f"Warning: Local database file '{local_dev_db_path}' not found.")
         print("Please run 'flask init-db' in your terminal to create and populate it.")
