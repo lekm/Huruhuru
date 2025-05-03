@@ -43,8 +43,9 @@ if not os.path.exists(DATABASE):
         # Using sys.executable ensures we use the Python Vercel prepared
         # Use check=True to raise an error if the command fails
         # Run from the project's root directory (basedir) where flask command expects to find modules
+        # Explicitly tell flask where the app is using --app
         result = subprocess.run(
-            [sys.executable, "-m", "flask", "init-db"],
+            [sys.executable, "-m", "flask", "--app", "api.index:app", "init-db"],
             check=True,
             cwd=basedir, # <--- Run from project root
             capture_output=True,
