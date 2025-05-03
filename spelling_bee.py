@@ -7,7 +7,10 @@ import os # Added os
 import time # Added time
 import unicodedata # Add unicodedata for normalization
 
+# Constants
 MIN_WORD_LENGTH = 4
+# Define vowels (including macrons) at the module level
+VOWELS = set("aeiouāēīōū") 
 
 RANKS = {
     0: "Beginner", 0.02: "Good Start", 0.05: "Moving Up", 0.08: "Good",
