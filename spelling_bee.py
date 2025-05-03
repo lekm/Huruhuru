@@ -3,6 +3,9 @@ import string
 from collections.abc import Iterable
 import sys
 import sqlite3 # Standard import should now work due to injection
+import os # Added os
+import time # Added time
+import unicodedata # Add unicodedata for normalization
 
 MIN_WORD_LENGTH = 4
 
@@ -37,68 +40,78 @@ def _get_db_connection(db_path):
 
 def choose_letters(db_path: str, active_list_types: list[str]):
     """
-    Choose 7 unique letters from the alphabet, ensuring at least one pangram
-    exists in the database for the active word lists using an iterative check.
+    Chooses 7 unique letters by first finding a valid pangram from the database
+    within the active word lists, ensuring the letter set includes a vowel.
     """
-    alphabet = list(string.ascii_lowercase)
-    conn = _get_db_connection(db_path)
-    if not conn:
-        raise ConnectionError(f"Could not connect to database at {db_path}")
+    if not active_list_types:
+        raise ValueError("No active word list types provided.")
 
-    cursor = conn.cursor()
-    placeholders = ','.join('?' * len(active_list_types))
+    print(f"--- [choose_letters PANGRAM-FIRST] Starting... DB: {db_path}, Lists: {active_list_types}")
+    start_time = time.time()
 
-    attempts = 0
-    max_attempts = 1000 # Prevent infinite loop
+    conn = None
+    valid_pangram_candidates = []
+    
+    try:
+        conn = _get_db_connection(db_path)
+        if not conn:
+            raise ConnectionError(f"Could not connect to database at {db_path}")
 
-    while attempts < max_attempts:
-        attempts += 1
-        random.shuffle(alphabet)
-        letters = set(alphabet[:7])
-        center_letter = random.choice(list(letters))
-        letters_str = "".join(sorted(list(letters)))
-
-        # --- BEGIN DEBUG LOGGING ---
-        print(f"--- [DEBUG choose_letters Attempt {attempts}] Letters picked: {''.join(sorted(list(letters)))}, Center: {center_letter}")
-        # --- END DEBUG LOGGING ---
-
-        # Query to check if a pangram exists for this specific letter set
-        # This checks if any word exists that contains ONLY letters from the set,
-        # contains all 7 distinct letters, and is in the active lists.
-        # Note: This SQL might be slow without advanced indexing or full-text search.
-        # The `WHERE word NOT GLOB '*[^` + letters_str + `]*'` checks if all letters are in the set.
-        # The `LENGTH(word) >= 7` is implicit if it contains all 7 letters.
-
-        # Simpler, potentially faster query: Check if any word contains all 7 letters
-        like_clauses = " AND ".join([f"INSTR(word, '{l}') > 0" for l in letters])
-        pangram_check_sql = f"""
-            SELECT 1 FROM words
+        cursor = conn.cursor()
+        placeholders = ','.join('?' * len(active_list_types))
+        # Query potential candidates (length >= 7)
+        sql_query = f"""
+            SELECT DISTINCT word 
+            FROM words 
             WHERE list_type IN ({placeholders})
-              AND {like_clauses}
-            LIMIT 1;
+              AND LENGTH(word) >= 7
         """
+        
+        print("--- [choose_letters PANGRAM-FIRST] Querying candidate words...")
+        cursor.execute(sql_query, active_list_types)
+        candidate_words = cursor.fetchall()
+        print(f"--- [choose_letters PANGRAM-FIRST] Found {len(candidate_words)} candidate words (len >= 7).")
 
-        try:
-            # print(f"Attempt {attempts}: Checking letters {''.join(sorted(list(letters)))}") # Debug
-            cursor.execute(pangram_check_sql, active_list_types)
-            result = cursor.fetchone()
-            if result:
-                # Found a letter set with at least one pangram
-                print(f"--- [DEBUG choose_letters] Found suitable letters after {attempts} attempts.")
-                # Print the final chosen letters again for clarity
-                print(f"--- [DEBUG choose_letters] Final chosen letters (Center *): {''.join(sorted(list(letters))).replace(center_letter, f'{center_letter}*')}")
-                conn.close()
-                return letters, center_letter
+        # Filter candidates in Python
+        print("--- [choose_letters PANGRAM-FIRST] Filtering candidates for 7 unique letters and vowels...")
+        for row in candidate_words:
+            word = row[0]
+            unique_letters = set(word)
+            
+            if len(unique_letters) == 7:
+                # Check for vowels (including macrons)
+                normalized_letters = {normalize_word(l) for l in unique_letters}
+                if any(v in normalized_letters for v in VOWELS):
+                    valid_pangram_candidates.append(word)
 
-        except sqlite3.Error as e:
-            print(f"Database error during pangram existence check: {e}")
-            # Don't raise here, allow retrying
-            continue # Try next set of letters
-        # No pangram found for this set, loop continues
+        print(f"--- [choose_letters PANGRAM-FIRST] Found {len(valid_pangram_candidates)} valid pangram candidates after filtering.")
 
-    # If loop finishes without finding letters
-    conn.close()
-    raise RuntimeError(f"Could not find a set of 7 letters with a guaranteed pangram after {max_attempts} attempts. Check word lists and active types: {active_list_types}")
+    except sqlite3.Error as e:
+        print(f"Database error during pangram candidate search: {e}")
+        raise ConnectionError(f"Database error finding pangrams: {e}") # Re-raise as connection error or specific DB error
+    finally:
+        if conn:
+            conn.close()
+
+    if not valid_pangram_candidates:
+        end_time = time.time()
+        print(f"--- [choose_letters PANGRAM-FIRST] Failed. Time elapsed: {end_time - start_time:.2f} seconds.")
+        raise RuntimeError(
+            f"Could not find any words with exactly 7 unique letters (including a vowel) "
+            f"in the active word lists: {active_list_types}. "
+            f"Check database content and list selections."
+        )
+
+    # Select a random pangram from the valid candidates
+    chosen_pangram = random.choice(valid_pangram_candidates)
+    final_letters = set(chosen_pangram)
+    center_letter = random.choice(list(final_letters)) # Choose center from the actual letters
+
+    end_time = time.time()
+    print(f"--- [choose_letters PANGRAM-FIRST] Success! Chosen Pangram: '{chosen_pangram}'. Time elapsed: {end_time - start_time:.2f} seconds.")
+    print(f"--- [choose_letters PANGRAM-FIRST] Final letters: {''.join(sorted(list(final_letters)))}, Center: {center_letter}")
+
+    return final_letters, center_letter
 
 
 def find_valid_words(db_path: str, letters: set[str], center_letter: str, active_list_types: list[str]):
