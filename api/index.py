@@ -142,7 +142,7 @@ def index():
             session['total_score'] = total_score
             session['found_words'] = []
             session['current_score'] = 0
-            print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(session['valid_solutions'])}, Map Size: {len(session['solution_map'])}, Total Score: {total_score}")
+            print(f"New game started. Letters: {session['letters']}, Center: {session['center_letter']}, Solutions: {len(session['valid_solutions'])}, Map Size: {len(session['solution_map'])}, Total Score: {total_score}")
 
         except ConnectionError as e:
              # Log the path attempted for connection if possible
@@ -169,6 +169,12 @@ def index():
     # Use refactored get_rank from spelling_bee
     rank = spelling_bee.get_rank(current_score, total_possible_score)
     total_words_count = len(session.get('valid_solutions', [])) # Get total word count
+
+    # --- BEGIN DEBUG LOGGING for template data ---
+    print(f"--- [DEBUG index route] Center Letter: {center_letter}")
+    print(f"--- [DEBUG index route] Display Letters (sorted from session): {display_letters}")
+    print(f"--- [DEBUG index route] Outer Letters: {outer_letters}")
+    # --- END DEBUG LOGGING ---
 
     return render_template('index.html',
                            letters=display_letters,
