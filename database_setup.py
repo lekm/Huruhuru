@@ -16,14 +16,23 @@ MIN_WORD_LENGTH_SETUP = 4 # Use a distinct constant name during setup
 
 def init_db(db_path='word_database.db'): # Keep default for direct script running
     """Initializes the SQLite database and populates it with words."""
+    # Determine the directory where this script *runs from* during build (project root)
+    project_root = os.getcwd() 
+    # Construct the wordlist path relative to the project root
+    word_list_dir = os.path.join(project_root, 'wordlists', 'processed') 
+
     print(f"Initializing database at: {db_path}")
-    # Determine the directory containing the DB file (which is likely the project root)
-    db_dir = os.path.dirname(db_path)
-    # Assume wordlists directory is relative to the DB directory (project root)
-    word_list_dir = os.path.join(db_dir, 'wordlists', 'processed') # <--- Construct path relative to db_path
-    print(f"Looking for processed word lists in: {word_list_dir}") # Add log
-    conn = None # Initialize conn to None
+    print(f"Executing from CWD: {project_root}") # Log CWD for confirmation
+    print(f"Looking for processed word lists in: {word_list_dir}") # Log the correct path
+    
+    conn = None
     try:
+        # Ensure the directory for the database exists (e.g., api/)
+        db_dir = os.path.dirname(db_path)
+        if db_dir: # Create DB directory if db_path includes one
+             os.makedirs(db_dir, exist_ok=True)
+             print(f"Ensured directory exists: {db_dir}")
+        
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
