@@ -6,6 +6,7 @@ import os
 import sqlite3 # Now this should refer to the injected pysqlite3
 import subprocess # Added for init-db check
 import sys # Added for init-db check
+import time # Added for timing
 from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g
 import requests
 import click
@@ -18,7 +19,10 @@ import database_setup # Direct import
 # Import the normalization function
 # from spelling_bee import normalize_word # Can use spelling_bee.normalize_word
 
-app = Flask(__name__)
+# --- Your Flask App Definition ---
+# Explicitly set template and static folder paths relative to the project root
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
+
 # Read secret key from environment variable, with a fallback for local dev
 # IMPORTANT: Set a strong SECRET_KEY environment variable in production (Vercel settings)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or-use-env')
@@ -30,56 +34,64 @@ basedir = os.path.dirname(api_dir)
 # Define the database path in the project root
 DATABASE = os.path.join(basedir, 'word_database.db') # <--- Path in root dir
 
-# --- Database Initialization Check (Run during Vercel build) ---
-print(f"Script directory (api): {api_dir}")
-print(f"Project root directory: {basedir}")
-print(f"Checking for database at: {DATABASE}")
+# --- Database Initialization Logic (Attempt to run during build) ---
+print("--- Python script top-level execution START ---")
+print(f"Script directory (api_dir): {api_dir}")
+print(f"Project root directory (basedir): {basedir}")
+print(f"Expected database path: {DATABASE}")
 
-# Check if the database file exists in the project root
+start_time = time.time()
+
+# Check if the database file exists *before* trying to create it
 if not os.path.exists(DATABASE):
-    print("Database not found. Attempting to initialize via 'flask init-db'...")
+    print(f"!!! Database NOT FOUND at {DATABASE}. Attempting BUILD-TIME initialization. !!!")
     try:
-        # Ensure Flask is installed and run the init-db command
-        # Using sys.executable ensures we use the Python Vercel prepared
-        # Use check=True to raise an error if the command fails
-        # Run from the project's root directory (basedir) where flask command expects to find modules
-        # Explicitly tell flask where the app is using --app
-        result = subprocess.run(
+        print("Running: flask --app api.index:app init-db via subprocess...")
+        # Ensure Flask command is correctly referenced
+        # Using sys.executable is generally safer
+        process = subprocess.run(
             [sys.executable, "-m", "flask", "--app", "api.index:app", "init-db"],
-            check=True,
-            cwd=basedir, # <--- Run from project root
-            capture_output=True,
-            text=True,
-            encoding='utf-8' # Explicitly set encoding
+            check=True,        # Raise error if command fails
+            cwd=basedir,       # Run from the project's root directory
+            capture_output=True,# Capture stdout/stderr
+            text=True,         # Decode as text
+            encoding='utf-8',  # Specify encoding
+            timeout=120        # Add a timeout (e.g., 2 minutes) for the subprocess itself
         )
-        print("Flask init-db command completed.")
-        print(f"stdout:\n{result.stdout}")
-        print(f"stderr:\n{result.stderr}")
-        # Verify if the file was created
+        print("--- flask init-db STDOUT ---")
+        print(process.stdout)
+        print("--- flask init-db STDERR ---")
+        print(process.stderr)
+        print("--- flask init-db command finished ---")
+
+        # Verify creation
         if os.path.exists(DATABASE):
-            print(f"Database file now exists at: {DATABASE}")
+            print(f"!!! SUCCESS: Database file now exists at: {DATABASE} !!!")
         else:
-            # This would indicate a problem with your init-db command logic
-            print(f"Error: Database file still not found at {DATABASE} after init-db command.")
-            # Fail the build explicitly
-            sys.exit("Database initialization failed to create the file.")
+            # If this happens, your init-db command might be writing the DB elsewhere
+            print(f"!!! CRITICAL WARNING: Database file STILL NOT FOUND after init-db command! Check init-db logic and paths. !!!")
+            # Consider raising an exception here to fail the build explicitly
+            raise RuntimeError("Database creation failed during build.")
+
     except FileNotFoundError:
-         print(f"Error: '{sys.executable} -m flask' command not found. Is Flask installed correctly in requirements.txt?")
-         # Re-raise the exception to fail the build
-         raise
+        print(f"!!! BUILD ERROR: '{sys.executable} -m flask' command not found. Is Flask installed? Check requirements.txt. !!!")
+        raise # Fail the build
+    except subprocess.TimeoutExpired:
+        print(f"!!! BUILD ERROR: 'flask init-db' subprocess timed out after 120 seconds. !!!")
+        raise # Fail the build
     except subprocess.CalledProcessError as e:
-        print(f"Error running flask init-db: {e}")
+        print(f"!!! BUILD ERROR: 'flask init-db' failed with exit code {e.returncode}. !!!")
         print(f"Command stdout: {e.stdout}")
         print(f"Command stderr: {e.stderr}")
-        # Re-raise the exception to fail the build
-        raise e
+        raise # Fail the build
     except Exception as e:
-        print(f"An unexpected error occurred during database initialization check: {e}")
-        # Re-raise the exception to fail the build
-        raise e
+        print(f"!!! BUILD ERROR: An unexpected error occurred during database initialization: {e} !!!")
+        raise # Fail the build
 else:
-    print("Database file found.")
-# --- End Database Initialization Check ---
+    print(f"--- Database file FOUND at {DATABASE}. Skipping initialization. ---")
+
+end_time = time.time()
+print(f"--- Database check/init took {end_time - start_time:.2f} seconds ---")
 
 # --- Flask CLI Command for DB Initialization ---
 @click.command('init-db')
@@ -112,9 +124,7 @@ def get_active_list_types_from_session():
 
 @app.route('/')
 def index():
-    # Optional: Add a runtime check just in case
-    if not os.path.exists(DATABASE):
-         return "Error: Database missing at runtime!", 500
+    # REMOVED runtime check for DATABASE path
     # Initialize default list preferences if not in session
     session.setdefault('use_nz', False)
     session.setdefault('use_au', False)
