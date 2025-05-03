@@ -2,12 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
+      "src": "package.json",
+      "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "npm run vercel-build-python",
-        "includeFiles": "word_database.db"
+        "buildCommand": "npm run vercel-build"
       }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [

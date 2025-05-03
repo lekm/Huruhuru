@@ -20,10 +20,10 @@ import database_setup # Direct import
 # from spelling_bee import normalize_word # Can use spelling_bee.normalize_word
 
 # --- Re-calculate paths needed by the app --- 
-# (This needs to happen since we commented out the block above)
 api_dir = os.path.abspath(os.path.dirname(__file__))
-basedir = os.path.dirname(api_dir)
-DATABASE = os.path.join(basedir, 'word_database.db')
+basedir = os.path.dirname(api_dir) # Project root
+# DATABASE_BUILD_PATH = os.path.join(basedir, 'word_database.db') # Original incorrect path used at runtime
+DATABASE_RUNTIME_PATH = "/var/task/word_database.db" # Absolute path in Vercel runtime
 
 # --- Flask App Definition (Should happen AFTER DB check/init) ---
 print("--- Initializing Flask app ---")
@@ -89,25 +89,21 @@ def index():
     # Start a new game if no letters in session (implies new visit or /new_game redirect)
     if 'letters' not in session:
         print("No letters found in session, starting new game setup...")
-        # Check if DB exists before proceeding
-        # Check if DB exists using the absolute path
-        if not os.path.exists(DATABASE): # <--- Check uses the absolute path
+        # Check if DB exists using the CORRECT runtime path
+        if not os.path.exists(DATABASE_RUNTIME_PATH):
              # Consider logging the path checked for easier debugging:
-             print(f"Database file not found at expected path: {DATABASE}")
-             return "Error: Word database file not found. Please check server logs.", 500 # More generic error
+             print(f"Database file not found at expected runtime path: {DATABASE_RUNTIME_PATH}")
+             return "Error: Word database file not found. Please check server logs.", 500
 
         active_list_types = get_active_list_types_from_session()
-        if not active_list_types: # Should at least have 'common'
+        if not active_list_types:
             return "Error: No active word lists selected or configured.", 500
 
         try:
-            # Call refactored functions from spelling_bee module
-            # Ensure functions called here use the absolute DATABASE path
-            letters, center_letter = spelling_bee.choose_letters(DATABASE, active_list_types)
-            # Ensure letters is a set for calculations, store as list in session
+            # Call refactored functions using the CORRECT runtime path
+            letters, center_letter = spelling_bee.choose_letters(DATABASE_RUNTIME_PATH, active_list_types)
             letters_set = set(letters)
-            # Get both solutions and the normalization map
-            valid_solutions, normalized_solution_map = spelling_bee.find_valid_words(DATABASE, letters_set, center_letter, active_list_types)
+            valid_solutions, normalized_solution_map = spelling_bee.find_valid_words(DATABASE_RUNTIME_PATH, letters_set, center_letter, active_list_types)
             total_score = spelling_bee.calculate_total_score(valid_solutions, letters_set)
 
             # Store game state in session (convert sets to lists for JSON compatibility)
@@ -123,8 +119,8 @@ def index():
 
         except ConnectionError as e:
              # Log the path attempted for connection if possible
-             print(f"Database connection error during game setup using path: {DATABASE}. Error: {e}")
-             return f"Error: Could not connect to the word database.", 500 # More generic error
+             print(f"Database connection error during game setup using path: {DATABASE_RUNTIME_PATH}. Error: {e}")
+             return f"Error: Could not connect to the word database.", 500
         except RuntimeError as e:
             print(f"Error generating puzzle: {e}")
             # Provide a user-friendly message
@@ -340,9 +336,10 @@ def get_definition(word):
 # --- Main Execution ---
 if __name__ == "__main__":
     # Check if DB exists on startup (optional, but helpful)
-    if not os.path.exists(DATABASE):
-        print(f"Warning: Database file '{DATABASE}' not found.")
+    # This check will likely use the path relative to where the script is run locally
+    local_dev_db_path = os.path.join(api_dir, 'word_database.db') # Path for local dev check
+    if not os.path.exists(local_dev_db_path):
+        print(f"Warning: Local database file '{local_dev_db_path}' not found.")
         print("Please run 'flask init-db' in your terminal to create and populate it.")
-        # Optionally exit or prevent app run? For development, allow running.
-        # exit(1)
-    app.run(debug=True, port=5001) # Use debug mode for development 
+        
+    app.run(debug=True, port=5001) 
