@@ -49,21 +49,32 @@
                         <text class="hive-letter center-letter" x="0" y="0">{{ center_letter.upper() }}</text>
                     </g>
 
-                    <!-- Outer Circles - Use pre-calculated positions -->
-                    {# Angles in radians for 6 circles - CALCULATION MOVED TO BACKEND #}
-                    {# {% set angles = [3.14159 * -0.5, 3.14159 * -0.1667, 3.14159 * 0.1667, 3.14159 * 0.5, 3.14159 * 0.8333, 3.14159 * 1.1667] %} #}
+                    <!-- Outer Letters - Displayed below center -->
+                    {# Define spacing and starting position for the horizontal row #}
+                    {% set outer_y_offset = 35 %} {# Vertical distance below center circle's bottom edge #}
+                    {% set outer_start_x = center_pos[0] - (outer_letters|length - 1) * 15 / 2 %} {# Center the row #}
+                    {% set outer_letter_spacing = 15 %}
+
                     {% for i in range(outer_letters|length) %}
-                        {# {% set angle = angles[i] %} #}
-                        {# Calculate x, y based on angle and outer_ring_radius - MOVED TO BACKEND #}
-                        {# {% set pos_x = center_pos[0] + outer_ring_radius * angle | cos %} #}
-                        {# {% set pos_y = center_pos[1] + outer_ring_radius * angle | sin %} #}
-                        {% set pos = outer_positions[i] %} {# Get position from passed list #}
+                        {% set letter = outer_letters[i] %}
+                        {% set pos_x = outer_start_x + i * outer_letter_spacing %}
+                        {% set pos_y = center_pos[1] + circle_radius + outer_y_offset %} {# Below the center circle #}
+                        <text class="hive-letter outer-letter-flat" x="{{ pos_x }}" y="{{ pos_y }}" data-letter="{{ letter }}">
+                            {{ letter.upper() }}
+                        </text>
+                    {% endfor %}
+
+                    {# Removed the loop for individual outer circles based on outer_positions #}
+                    {# 
+                    {% for i in range(outer_letters|length) %}
+                        {% set pos = outer_positions[i] %} 
                         {% set letter = outer_letters[i] %}
                         <g class="hive-cell-group outer-group" transform="translate({{ pos.x }}, {{ pos.y }})" data-letter="{{ letter }}">
                              <circle class="hive-cell outer" r="{{ circle_radius }}"></circle>
                             <text class="hive-letter outer-letter" x="0" y="0">{{ letter.upper() }}</text>
                         </g>
-                    {% endfor %}
+                    {% endfor %} 
+                    #}
                 </svg>
             </div>
 

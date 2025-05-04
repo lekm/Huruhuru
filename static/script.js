@@ -55,23 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const shuffleLetters = () => {
-        const outerGroups = Array.from(document.querySelectorAll('g.hive-cell-group.outer-group'));
+        // Select the text elements directly
+        const outerLetters = Array.from(document.querySelectorAll('.hive-letter.outer-letter-flat'));
 
-        let lettersData = outerGroups.map((group) => ({
-            letter: group.getAttribute('data-letter'),
-        }));
+        // Get the current letters from the data attribute
+        let letters = outerLetters.map(el => el.getAttribute('data-letter'));
 
-        let shuffledLetters = lettersData.map(d => d.letter);
-        for (let i = shuffledLetters.length - 1; i > 0; i--) {
+        // Shuffle the letters array (Fisher-Yates)
+        for (let i = letters.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [shuffledLetters[i], shuffledLetters[j]] = [shuffledLetters[j], shuffledLetters[i]];
+            [letters[i], letters[j]] = [letters[j], letters[i]];
         }
 
-        outerGroups.forEach((group, index) => {
-            const newLetter = shuffledLetters[index];
-            const textElement = group.querySelector('.hive-letter.outer-letter');
-            group.setAttribute('data-letter', newLetter);
-            textElement.textContent = newLetter.toUpperCase();
+        // Update the text content and data attribute of each element
+        outerLetters.forEach((element, index) => {
+            const newLetter = letters[index];
+            element.textContent = newLetter.toUpperCase();
+            element.setAttribute('data-letter', newLetter);
         });
     };
 
@@ -245,8 +245,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     submitButton.addEventListener('click', submitGuess);
 
-    hiveCellGroups.forEach(group => {
-        group.addEventListener('click', handleLetterClick);
+    // Add click listener to the center group
+    if (centerGroup) {
+        centerGroup.addEventListener('click', handleLetterClick);
+    }
+
+    // Add click listeners to the outer letter text elements
+    outerLetterElements.forEach(letterElement => {
+        letterElement.addEventListener('click', handleLetterClick);
     });
 
     deleteButton.addEventListener('click', deleteLastChar);
