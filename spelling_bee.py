@@ -142,7 +142,7 @@ def find_valid_words(db_path: str, letters: set[str], center_letter: str, active
         SELECT word
         FROM words
         WHERE list_type IN ({placeholders})
-          AND INSTR(word, ?) > 0
+          AND INSTR(LOWER(word), LOWER(?)) > 0
           AND LENGTH(word) >= ?
     """
     query_params = active_list_types + [center_letter, MIN_WORD_LENGTH]
