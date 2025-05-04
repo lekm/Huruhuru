@@ -35,27 +35,34 @@
                     </div>
                 </div>
                 
-                {% if display_stats %}
-                <div class="possible-remaining-panel"> <!-- Panel 2: Possible/Remaining Per Dictionary -->
+                {# --- Always render dictionary panel containers --- #}
+                <div class="possible-remaining-panel"> 
                      <div class="dict-stats-list">
-                        {% for stat in display_stats %}
-                        <div class="dict-stat-item" data-list-key="{{ stat.key }}">
-                            <span class="dict-icon-area">
-                                {% if stat.icon_type == 'emoji' %}
-                                    <span class="dict-icon-emoji">{{ stat.icon_value }}</span>
-                                {% elif stat.icon_type == 'image' and stat.icon_value %}
-                                    <img src="{{ stat.icon_value }}" alt="{{ stat.label }} icon" class="dict-icon-img">
-                                {% endif %}
-                            </span>
-                            <span class="dict-label">{{ stat.label }}:</span>
-                            <span class="dict-counts">
-                                <span class="dict-found-count" id="found-count-{{ stat.key }}">{{ stat.found }}</span> / <span class="dict-total-count">{{ stat.total }}</span> found
-                            </span>
-                        </div>
-                        {% endfor %}
+                        {# --- Conditionally render the content --- #}
+                        {% if display_stats %}
+                            {% for stat in display_stats %}
+                            <div class="dict-stat-item" data-list-key="{{ stat.key }}">
+                                <span class="dict-icon-area">
+                                    {% if stat.icon_type == 'emoji' %}
+                                        <span class="dict-icon-emoji">{{ stat.icon_value }}</span>
+                                    {% elif stat.icon_type == 'image' and stat.icon_value %}
+                                        <img src="{{ stat.icon_value }}" alt="{{ stat.label }} icon" class="dict-icon-img">
+                                    {% endif %}
+                                </span>
+                                <span class="dict-label">{{ stat.label }}:</span>
+                                <span class="dict-counts">
+                                    <span class="dict-found-count" id="found-count-{{ stat.key }}">{{ stat.found }}</span> / <span class="dict-total-count">{{ stat.total }}</span> found
+                                </span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            {# Optionally, add a placeholder when no stats are displayed #}
+                            {# <p class="no-stats-placeholder">Start a new game to see progress.</p> #}
+                        {% endif %}
+                        {# --- End conditional content --- #}
                     </div>
                 </div>
-                {% endif %}
+                {# --- End dictionary panel --- #}
             </div>
 
             <div id="message-area">
@@ -86,9 +93,9 @@
                         {# Use viewBox center passed from backend for transform #}
                         {# Add conditional rendering: Only show if center_letter exists #}
                         {% if center_letter %}
-                        <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
-                            {# Use center_radius passed from backend #}
-                            <circle class="hive-cell center" r="{{ center_radius }}"></circle>
+                        <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
+                            {# Conditionally render content based on center_letter #}
+                            <circle class="hive-cell center" r="{{ center_radius }}" data-letter="{{ center_letter.lower() }}"></circle> {# Add data-letter here? Or rely on JS? JS seems better #}
                             <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
                         </g>
                         {% endif %}
@@ -97,7 +104,7 @@
                         {# Use viewBox center passed from backend for transform #}
                         {# Add conditional rendering: Only show if outer_segments_data exists and is not empty #}
                         {% if outer_segments_data %}
-                        <g class="outer-segments-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})">
+                        <g class="outer-segments-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
                             {# Add an inner group specifically for the spinning animation #}
                             <g class="spinning-part">
                                 {# Loop through the data calculated in Python #}
