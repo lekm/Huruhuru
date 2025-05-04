@@ -626,7 +626,12 @@ def start_game():
         all_letters = sorted(list(session.get('letters_set', set())))
         center_letter = session.get('center_letter', '')
         solution_counts = session.get('solution_counts', {}) # Totals per list
-        total_score = session.get('total_score', 0) # <<< RETRIEVE TOTAL SCORE
+        total_score = session.get('total_score', 0) 
+        # <<< Retrieve Geometry Data >>>
+        outer_segments_data = session.get('outer_segments_data', []) 
+        center_radius = session.get('center_radius', 25) # Default radius if not found
+        viewBox_center_x = session.get('viewBox_center_x', 75)
+        viewBox_center_y = session.get('viewBox_center_y', 75)
 
         # Format word counts for frontend { key: { found: 0, total: X } }
         word_counts_for_js = {
@@ -648,11 +653,17 @@ def start_game():
             'current_score': 0, # Initial score is always 0
             'rank': 'Egg',     # Initial rank is always 'Egg'
             'word_counts_by_type': word_counts_for_js,
-            'active_dict_metadata': active_dict_metadata, # Pass metadata for UI building
-            'total_score': total_score, # <<< ADD TOTAL SCORE TO RESPONSE
-            'message': 'New game started successfully!' # Optional success message
+            'active_dict_metadata': active_dict_metadata, 
+            'total_score': total_score, 
+            # <<< Add Geometry Data to Response >>>
+            'outer_segments_data': outer_segments_data,
+            'center_radius': center_radius,
+            'viewBox_center_x': viewBox_center_x,
+            'viewBox_center_y': viewBox_center_y,
+            # <<< ----------------------------- >>>
+            'message': 'New game started successfully!' 
         }
-        app.logger.info(f"'/start_game': Sending success response: {response_data}") # Log response data
+        app.logger.info(f"'/start_game': Sending success response with geometry data.\")")
         return jsonify(response_data)
     else:
         # Game setup failed (e.g., no words found for letters/lists)

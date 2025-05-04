@@ -446,142 +446,108 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- REFACTORED Animation Logic --- 
-    function prepareAndRunAnimation(outerLetters, centerLetter) {
+    function prepareAndRunAnimation(centerLetter, outerSegmentsData, centerRadius) {
         // Select target containers by ID
         const targetCenterGroup = document.getElementById('center-group');
         const targetSpinningPart = document.getElementById('spinning-part'); // Outer letters go inside here
-        const targetHiveSvg = document.getElementById('hive-svg'); // Needed for geometry calc
+        const targetOuterSegmentsGroup = document.getElementById('outer-segments-group'); // Parent of spinning part
 
         // Validate elements and data needed for dynamic creation
-        if (!targetCenterGroup || !targetSpinningPart || !targetHiveSvg || !Array.isArray(outerLetters) || outerLetters.length !== 6 || !centerLetter) {
-            console.error("Cannot run animation: Missing target elements or invalid letter data.", 
-                          {targetCenterGroup, targetSpinningPart, targetHiveSvg, outerLetters, centerLetter});
+        if (!targetCenterGroup || !targetSpinningPart || !targetOuterSegmentsGroup || !Array.isArray(outerSegmentsData) || !centerLetter || !centerRadius) {
+            console.error("Cannot run animation: Missing target elements or required data.", 
+                          {targetCenterGroup, targetSpinningPart, targetOuterSegmentsGroup, outerSegmentsData, centerLetter, centerRadius});
             if (messageArea) {
                  messageArea.textContent = "Error updating display.";
                  messageArea.className = 'message-error';
             }
             return;
         }
-        
-        // --- Geometry Calculation (Needs to match backend logic) --- 
-        function getSegmentGeometry(index, numSegments) {
-            const viewBoxWidth = 150; // Assuming viewBox ~0 0 150 150 based on template
-            const viewBoxHeight = 150;
-            const viewBox_center_x = viewBoxWidth / 2;
-            const viewBox_center_y = viewBoxHeight / 2;
-            const center_radius = 25;
-            const outer_ring_end_radius = 65;
-            const letter_radius = center_radius + (outer_ring_end_radius - center_radius) / 2;
-            const segment_angle_deg = 360 / numSegments;
-            const segment_angle_rad = (Math.PI / 180) * segment_angle_deg;
-            const start_angle_offset_rad = (Math.PI / 180) * (-90 - (segment_angle_deg / 2)); // Align first segment top
-            
-            const current_angle_rad = start_angle_offset_rad + index * segment_angle_rad;
-            const next_angle_rad = current_angle_rad + segment_angle_rad;
-            const letter_angle_rad = current_angle_rad + (segment_angle_rad / 2);
 
-            const letter_x = letter_radius * Math.cos(letter_angle_rad);
-            const letter_y = letter_radius * Math.sin(letter_angle_rad);
-            
-            const start_cx = center_radius * Math.cos(current_angle_rad);
-            const start_cy = center_radius * Math.sin(current_angle_rad);
-            const start_ox = outer_ring_end_radius * Math.cos(current_angle_rad);
-            const start_oy = outer_ring_end_radius * Math.sin(current_angle_rad);
-            const end_ox = outer_ring_end_radius * Math.cos(next_angle_rad);
-            const end_oy = outer_ring_end_radius * Math.sin(next_angle_rad);
-            const end_cx = center_radius * Math.cos(next_angle_rad);
-            const end_cy = center_radius * Math.sin(next_angle_rad);
-            const large_arc_flag = 0;
-            const sweep_flag_outer = 1;
-            const sweep_flag_inner = 0;
-            const fmt = (num) => num.toFixed(2);
-            
-            const path_d = `M ${fmt(start_cx)} ${fmt(start_cy)} L ${fmt(start_ox)} ${fmt(start_oy)} A ${fmt(outer_ring_end_radius)} ${fmt(outer_ring_end_radius)} 0 ${large_arc_flag} ${sweep_flag_outer} ${fmt(end_ox)} ${fmt(end_oy)} L ${fmt(end_cx)} ${fmt(end_cy)} A ${fmt(center_radius)} ${fmt(center_radius)} 0 ${large_arc_flag} ${sweep_flag_inner} ${fmt(start_cx)} ${fmt(start_cy)} Z`;
-
-            // --- ADD LOGGING --- >
-            console.log(`[getSegmentGeometry ${index}] x: ${fmt(letter_x)}, y: ${fmt(letter_y)}, path d starts: ${path_d.substring(0, 20)}...`);
-            // < -------------------
-            
-            return { x: fmt(letter_x), y: fmt(letter_y), segment_path: path_d };
-        }
-        // --- End Geometry Calculation ---
-
-        console.log("Starting animation with:", outerLetters, centerLetter);
+        console.log("Starting new game animation...");
 
         // 1. Clear previous content from containers
         targetCenterGroup.innerHTML = ''; 
         targetSpinningPart.innerHTML = ''; 
-        targetCenterGroup.removeAttribute("data-letter"); // Clear old data-letter
+        targetCenterGroup.removeAttribute("data-letter");
+        // Ensure parent transforms are set (might be redundant if template fallback works)
+        targetCenterGroup.setAttribute('transform', 'translate(75, 75)');
+        targetOuterSegmentsGroup.setAttribute('transform', 'translate(75, 75)');
         
-        // Reset other UI elements if needed (score/rank are handled by updateUIForNewGame)
+        // Reset guess display
         if (currentGuessDisplay) currentGuessDisplay.innerHTML = '<span>&nbsp;</span>';
         currentGuess = '';
         
-        // --- Force Reflow (Attempt to fix animation timing) --- >
-        void targetSpinningPart.offsetHeight; // Reading offsetHeight forces reflow
-        // < ---------------------------------------------------
+        const svgNS = "http://www.w3.org/2000/svg";
+        const white_color = '#ffffff'; 
+        const pale_yellow = '#fffacd';
 
-        // 2. Trigger Spin Animation
-        console.log("Adding .spinning class to:", targetSpinningPart); // Log before adding
+        // 2. Create Outer Groups with PATHS ONLY
+        outerSegmentsData.forEach((segmentData, index) => {
+            if (!segmentData || !segmentData.segment_path || !segmentData.letter) return; // Skip invalid data
+            
+            const outerGroup = document.createElementNS(svgNS, "g");
+            outerGroup.classList.add("hive-cell-group", "outer-segment-group");
+            // Add index or letter as data-attribute for later text insertion
+            outerGroup.setAttribute("data-segment-index", index.toString()); 
+            outerGroup.setAttribute("data-letter", segmentData.letter.toLowerCase()); // Keep data-letter
+
+            const path = document.createElementNS(svgNS, "path");
+            path.classList.add("hive-segment-path");
+            path.setAttribute("d", segmentData.segment_path); 
+            path.setAttribute("fill", index % 2 === 0 ? white_color : pale_yellow); 
+            // Add stroke etc. if needed from CSS or here
+            path.setAttribute("stroke", "#bdbdbd"); 
+            path.setAttribute("stroke-width", "1px");
+
+            outerGroup.appendChild(path); // Add only the path for now
+            targetSpinningPart.appendChild(outerGroup); // Append group to spinning part
+        });
+
+        // 3. Force Reflow & Trigger Spin Animation
+        void targetSpinningPart.offsetHeight; 
+        console.log("Adding .spinning class to:", targetSpinningPart);
         targetSpinningPart.classList.add('spinning');
-        console.log("Class list after add:", targetSpinningPart.classList); // Log after adding
+        console.log("Class list after add:", targetSpinningPart.classList);
 
-        // 3. Set timeout for post-animation population
+        // 4. Set timeout for post-animation population
         const spinDuration = 3000; 
         setTimeout(() => {
-            console.log("Removing .spinning class from:", targetSpinningPart); // Log before removing
-            targetSpinningPart.classList.remove('spinning'); // Stop visual spin
-            console.log("Class list after remove:", targetSpinningPart.classList); // Log after removing
+            console.log("Removing .spinning class from:", targetSpinningPart);
+            targetSpinningPart.classList.remove('spinning'); 
+            console.log("Class list after remove:", targetSpinningPart.classList); 
 
-            // 4. Populate Outer Letters Dynamically
-            let revealDelay = 200;
-            const numSegments = outerLetters.length;
-            const white_color = '#ffffff'; // Define colors locally or get from CSS vars
-            const pale_yellow = '#fffacd';
-            
-            outerLetters.forEach((letter, index) => {
+            // 5. Populate TEXT into existing Outer Groups
+            let revealDelay = 150; 
+            outerSegmentsData.forEach((segmentData, index) => {
                 setTimeout(() => {
-                    const geometry = getSegmentGeometry(index, numSegments);
-                    const svgNS = "http://www.w3.org/2000/svg";
-                    
-                    const outerGroup = document.createElementNS(svgNS, "g");
-                    outerGroup.classList.add("hive-cell-group", "outer-segment-group");
-                    outerGroup.setAttribute("data-letter", letter.toLowerCase());
+                    // Find the corresponding group using the index we added
+                    const segmentGroup = targetSpinningPart.querySelector(`.outer-segment-group[data-segment-index="${index}"]`);
+                    if (segmentGroup && segmentData.letter && segmentData.x !== undefined && segmentData.y !== undefined) {
+                        const textElement = document.createElementNS(svgNS, "text");
+                        textElement.classList.add("hive-letter", "outer-letter");
+                        textElement.setAttribute("id", `outer-letter-${index}`); // Keep ID for shuffle
+                        textElement.setAttribute("x", segmentData.x.toString());
+                        textElement.setAttribute("y", segmentData.y.toString());
+                        textElement.setAttribute("text-anchor", "middle");
+                        textElement.setAttribute("dominant-baseline", "middle");
+                        textElement.textContent = segmentData.letter.toUpperCase();
+                        textElement.classList.add('hidden'); 
 
-                    const path = document.createElementNS(svgNS, "path");
-                    path.classList.add("hive-segment-path");
-                    path.setAttribute("d", geometry.segment_path); 
-                    // Apply fill using JS - CSS :nth-child won't work reliably on dynamic elements
-                    path.setAttribute("fill", index % 2 === 0 ? white_color : pale_yellow); 
-
-                    const textElement = document.createElementNS(svgNS, "text");
-                    textElement.classList.add("hive-letter", "outer-letter");
-                    textElement.setAttribute("id", `outer-letter-${index}`);
-                    textElement.setAttribute("x", geometry.x);
-                    textElement.setAttribute("y", geometry.y);
-                    textElement.setAttribute("text-anchor", "middle");
-                    textElement.setAttribute("dominant-baseline", "middle");
-                    textElement.textContent = letter.toUpperCase();
-                    textElement.classList.add('hidden'); // Add hidden initially
-
-                    outerGroup.appendChild(path);
-                    outerGroup.appendChild(textElement);
-                    targetSpinningPart.appendChild(outerGroup);
-                    
-                    // Trigger reveal transition (force reflow)
-                    requestAnimationFrame(() => { 
-                        requestAnimationFrame(() => { textElement.classList.remove('hidden'); }); 
-                    });
-
+                        segmentGroup.appendChild(textElement); // Append text into its group
+                        
+                        // Trigger reveal transition
+                        requestAnimationFrame(() => { 
+                            requestAnimationFrame(() => { textElement.classList.remove('hidden'); }); 
+                        });
+                    } else {
+                        console.warn(`Could not find segment group or data for index ${index} to add text.`);
+                    }
                 }, index * revealDelay);
             });
 
-            // 5. Populate Center Letter Dynamically
-            const centerRevealDelay = outerLetters.length * revealDelay + 100;
+            // 6. Populate Center Letter Dynamically
+            const centerRevealDelay = outerSegmentsData.length * revealDelay + 100;
             setTimeout(() => {
-                 const centerRadius = 25; // Assuming fixed radius, or get from config/backend
-                 const svgNS = "http://www.w3.org/2000/svg";
-                 
                  const centerCircle = document.createElementNS(svgNS, "circle");
                  centerCircle.classList.add("hive-cell", "center");
                  centerCircle.setAttribute("r", centerRadius.toString()); 
@@ -594,13 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
                  centerTextElement.setAttribute("dominant-baseline", "middle");
                  centerTextElement.setAttribute("dy", "0.1em");
                  centerTextElement.textContent = centerLetter.toUpperCase();
-                 centerTextElement.classList.add('hidden'); // Add hidden initially
+                 centerTextElement.classList.add('hidden');
 
                  targetCenterGroup.appendChild(centerCircle);
                  targetCenterGroup.appendChild(centerTextElement);
                  targetCenterGroup.setAttribute("data-letter", centerLetter.toLowerCase());
                  
-                 // Trigger reveal transition (force reflow)
+                 // Trigger reveal transition
                  requestAnimationFrame(() => { 
                      requestAnimationFrame(() => { centerTextElement.classList.remove('hidden'); });
                  });
@@ -609,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }, spinDuration);
     }
-    // --- End Refactored Animation Logic ---
+    // --- End prepareAndRunAnimation ---
 
     // --- Event Listeners (Original - Adapted where needed) ---
 
@@ -760,74 +726,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(payload) // Send the corrected payload
                 });
                 
-                // Get the full response data regardless of status first
                 const responseData = await response.json(); 
 
-                // Check if the response status is OK *and* the backend reported success
                 if (response.ok && responseData.success) {
-                    // --- CORRECT SUCCESS HANDLING --- 
-                    console.log("Received success from /start_game:", responseData);
-                    if(dictionaryModal) dictionaryModal.style.display = 'none'; // Close modal
+                    console.log("Received success from /start_game:", responseData); 
+                    if(dictionaryModal) dictionaryModal.style.display = 'none';
                     
-                    // --- UPDATE VALIDATION STATE IMMEDIATELY --- <<<<<<<<<<<<<<<<<
+                    // Update validation state
                     if (responseData.all_letters && Array.isArray(responseData.all_letters)) {
                         currentValidLettersSet = new Set(responseData.all_letters.map(l => l.toLowerCase()));
                         console.log("Updated currentValidLettersSet for validation:", currentValidLettersSet); 
                     } else {
-                         console.error("Missing/invalid all_letters in response, cannot update validation state!");
-                         currentValidLettersSet = new Set(); // Clear it on error
+                         currentValidLettersSet = new Set(); 
                     }
-                    // --- ------------------------------------- --- <<<<<<<<<<<<<<<<<
-                    
-                    // --- UPDATE TOTAL SCORE STATE --- <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                    // Update total score state
                     if (typeof responseData.total_score === 'number') {
                         currentGameTotalScore = responseData.total_score;
                         console.log("Updated currentGameTotalScore:", currentGameTotalScore);
                     } else {
-                         console.error("Missing/invalid total_score in response!");
-                         currentGameTotalScore = 0; // Default to 0 on error
+                         currentGameTotalScore = 0;
                     }
-                    // --- ------------------------- ---
                     
-                    // 1. Update the UI with the new game state data (score, rank, counts)
+                    // 1. Update main UI (score, rank, counts)
                     updateUIForNewGame(responseData); 
                     
-                    // 2. Prepare for and Run Animation using letter data from response
-                    // --- FILTER LETTERS FOR ANIMATION --- 
-                    const centerLetter = responseData.center_letter;
-                    const outerLetters = responseData.all_letters.filter(l => l !== centerLetter);
-                    if (outerLetters.length !== 6) {
-                        // Safety check in case filtering fails or data is unexpected
-                        console.error("Error: Could not determine correct outer letters for animation.", responseData);
-                        if(messageArea) {
-                            messageArea.textContent = 'Error preparing display animation.';
-                            messageArea.className = 'message-error';
-                        }
-                    } else {
-                         prepareAndRunAnimation(outerLetters, centerLetter); 
-                    }
-                    // --- ----------------------------- ---
+                    // 2. Run the NEW animation logic, passing required data
+                    prepareAndRunAnimation(
+                        responseData.center_letter, 
+                        responseData.outer_segments_data, // Pass the detailed list
+                        responseData.center_radius
+                    ); 
 
                 } else {
-                    // Handle backend errors or non-ok responses
                     const errorMsg = responseData.message || responseData.error || `Failed to start game (Status: ${response.status})`;
                     console.error("Error starting game:", errorMsg);
-                    throw new Error(errorMsg); // Throw error to be caught below
+                    throw new Error(errorMsg); 
                 }
-
-            } catch (error) { // Catch fetch/backend errors/thrown errors
+            } catch (error) { 
                 console.error("Error in start game process:", error);
                 if(dictErrorDiv) {
                     dictErrorDiv.textContent = `Error: ${error.message}`;
                     dictErrorDiv.style.display = 'block';
                 }
-                 // Also update message area maybe?
-                 // if(messageArea) {
-                 //    messageArea.textContent = `Error starting game: ${error.message}`;
-                 //    messageArea.className = 'message-error';
-                 // }
             } finally {
-                 // Always re-enable button and reset text
                  dictionaryConfirmBtn.disabled = false;
                  dictionaryConfirmBtn.textContent = 'Start New Game';
             }
