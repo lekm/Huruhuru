@@ -51,37 +51,44 @@
 
                     {# --- Center Circle --- #}
                     {# Use viewBox center passed from backend for transform #}
+                    {# Add conditional rendering: Only show if center_letter exists #}
+                    {% if center_letter %}
                     <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
                         {# Use center_radius passed from backend #}
                         <circle class="hive-cell center" r="{{ center_radius }}"></circle>
                         <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
                     </g>
+                    {% endif %}
 
                     {# --- Outer Segments and Letters --- #}
                     {# Use viewBox center passed from backend for transform #}
+                    {# Add conditional rendering: Only show if outer_segments_data exists and is not empty #}
+                    {% if outer_segments_data %}
                     <g class="outer-segments-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})">
-                        {# Loop through the data calculated in Python #}
-                        {% for segment_data in outer_segments_data %}
-                            {# Segment group for styling and interaction #}
-                            {# Use letter from segment_data #}
-                            <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}"> {# Use lowercase letter for consistency if needed by JS #}
-                                {# Use pre-calculated path from segment_data #}
-                                {# Apply alternating fill color based on loop index #}
-                                <path class="hive-segment-path"
-                                      d="{{ segment_data.segment_path }}"
-                                      fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
-                                {# Use pre-calculated position from segment_data #}
-                                <text class="hive-letter outer-letter"
-                                      id="outer-letter-{{ loop.index0 }}" {# ID for JS targeting #}
-                                      x="{{ segment_data.x }}"
-                                      y="{{ segment_data.y }}"
-                                      text-anchor="middle"
-                                      dominant-baseline="middle">
-                                    {{ segment_data.letter }} {# Already uppercase from backend #}
-                                </text>
-                            </g>
-                        {% endfor %}
+                        {# Add an inner group specifically for the spinning animation #}
+                        <g class="spinning-part">
+                            {# Loop through the data calculated in Python #}
+                            {% for segment_data in outer_segments_data %}
+                                {# Add conditional rendering: Only process if segment_data.letter exists #}
+                                {% if segment_data.letter %}
+                                <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}">
+                                    <path class="hive-segment-path"
+                                          d="{{ segment_data.segment_path }}"
+                                          fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
+                                    <text class="hive-letter outer-letter"
+                                          id="outer-letter-{{ loop.index0 }}"
+                                          x="{{ segment_data.x }}"
+                                          y="{{ segment_data.y }}"
+                                          text-anchor="middle"
+                                          dominant-baseline="middle">
+                                        {{ segment_data.letter }}
+                                    </text>
+                                </g>
+                                {% endif %}
+                            {% endfor %}
+                        </g> {# End of spinning-part group #}
                     </g>
+                    {% endif %}
                 </svg>
             </div>
 
