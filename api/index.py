@@ -11,6 +11,7 @@ from flask import Flask, render_template, request, session, jsonify, redirect, u
 import requests
 import click
 from flask.cli import with_appcontext
+import math # <-- ADDED IMPORT
 
 # Import game logic from spelling_bee module
 import spelling_bee # Direct import
@@ -108,90 +109,80 @@ def check_db():
 
 @app.route('/')
 def index():
-    print(f"--- [RUNTIME] Request received for {request.path} route ---")
-    # REMOVED runtime check for DATABASE path
-    # Initialize default list preferences if not in session
-    session.setdefault('use_nz', False)
-    session.setdefault('use_au', False)
-    session.setdefault('use_tr', False)
+    print("--- [RUNTIME] Request received for / route ---")
+    # Ensure DB exists before proceeding
+    check_db()
 
-    # --- Game Setup ---
-    # Start a new game if no letters in session (implies new visit or /new_game redirect)
-    if 'letters' not in session:
+    active_list_types = session.get('active_list_types', ['common'])
+    print(f"Active list types from session: {active_list_types}")
+
+    # Check if game state exists in session
+    if 'letters' not in session or 'center_letter' not in session or 'solutions' not in session:
         print("No letters found in session, starting new game setup...")
-        # Check if DB exists using the CORRECT runtime path
-        if not os.path.exists(DATABASE_PATH):
-             # Consider logging the path checked for easier debugging:
-             print(f"Database file not found at expected runtime path: {DATABASE_PATH}")
-             return "Error: Word database file not found. Please check server logs.", 500
+        # Start new game if no state found
+        letters, center_letter, solutions, normalized_solution_map, total_score = setup_new_game(DATABASE_PATH, active_list_types)
+        session['letters'] = list(letters) # Store as list
+        session['center_letter'] = center_letter
+        session['solutions'] = list(solutions) # Store as list for JSON serialization
+        session['normalized_solution_map'] = normalized_solution_map # Store the map
+        session['found_words'] = []
+        session['score'] = 0
+        session['total_score'] = total_score
+        print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(solutions)}, Map Size: {len(normalized_solution_map)}, Total Score: {total_score}")
 
-        active_list_types = get_active_list_types_from_session()
-        if not active_list_types:
-            return "Error: No active word lists selected or configured.", 500
-
-        try:
-            # Call refactored functions using the CORRECT runtime path
-            letters, center_letter = spelling_bee.choose_letters(DATABASE_PATH, active_list_types)
-            letters_set = set(letters)
-            valid_solutions, normalized_solution_map = spelling_bee.find_valid_words(DATABASE_PATH, letters_set, center_letter, active_list_types)
-            total_score = spelling_bee.calculate_total_score(valid_solutions, letters_set)
-
-            # Store game state in session (convert sets to lists for JSON compatibility)
-            session['letters'] = sorted(list(letters_set))
-            session['center_letter'] = center_letter
-            # Store canonical solutions as list for display/counting
-            session['valid_solutions'] = sorted(list(valid_solutions))
-            session['solution_map'] = normalized_solution_map # Store the map
-            session['total_score'] = total_score
-            session['found_words'] = []
-            session['current_score'] = 0
-            print(f"New game started. Letters: {session['letters']}, Center: {session['center_letter']}, Solutions: {len(session['valid_solutions'])}, Map Size: {len(session['solution_map'])}, Total Score: {total_score}")
-
-        except ConnectionError as e:
-             # Log the path attempted for connection if possible
-             print(f"Database connection error during game setup using path: {DATABASE_PATH}. Error: {e}")
-             return f"Error: Could not connect to the word database.", 500
-        except RuntimeError as e:
-            print(f"Error generating puzzle: {e}")
-            # Provide a user-friendly message
-            return f"Error: Could not generate a suitable puzzle with the current word list selections. Details: {e}", 500
-        except Exception as e:
-            # Catch any other unexpected errors during setup
-            print(f"Unexpected error during game setup: {e}")
-            # Potentially log the full traceback here
-            return "An unexpected error occurred while setting up the game.", 500
-
-
-    # --- Prepare data for template (using session data) ---
+    # Retrieve game state from session
     center_letter = session['center_letter']
-    display_letters = sorted(session['letters'])
-    outer_letters = [l for l in display_letters if l != center_letter]
-    current_score = session['current_score']
-    total_possible_score = session['total_score']
-    found_words = sorted(session['found_words'])
-    # Use refactored get_rank from spelling_bee
-    rank = spelling_bee.get_rank(current_score, total_possible_score)
-    total_words_count = len(session.get('valid_solutions', [])) # Get total word count
+    all_letters = sorted(session['letters']) # Ensure consistent order for display
+    outer_letters = [l for l in all_letters if l != center_letter]
+    solutions = set(session['solutions']) # Convert back to set for efficient lookups later if needed
+    found_words = session['found_words']
+    score = session['score']
+    total_score = session.get('total_score', 0) # Get total score
 
-    # --- BEGIN DEBUG LOGGING for template data ---
+    # --- Calculate Outer Circle Positions --- START
+    circle_radius = 25 # Must match template or be passed
+    center_pos_x = 75 # Must match template viewBox center
+    center_pos_y = 75
+    outer_ring_radius = 50 # Must match template or be passed
+    angles = [math.pi * -0.5, math.pi * -0.1667, math.pi * 0.1667, math.pi * 0.5, math.pi * 0.8333, math.pi * 1.1667] # Approx angles: -90, -30, 30, 90, 150, 210 degrees
+    outer_positions = []
+    for i in range(len(outer_letters)): # Max 6 outer letters
+        if i < len(angles):
+            angle = angles[i]
+            pos_x = center_pos_x + outer_ring_radius * math.cos(angle)
+            pos_y = center_pos_y + outer_ring_radius * math.sin(angle)
+            outer_positions.append({'x': round(pos_x, 2), 'y': round(pos_y, 2)})
+        else: # Should not happen with 7 letters, but handle defensively
+            outer_positions.append({'x': center_pos_x, 'y': center_pos_y}) # Default to center
+    print(f"--- [DEBUG index route] Calculated outer_positions: {outer_positions}")
+    # --- Calculate Outer Circle Positions --- END
+
+    rank = calculate_rank(score, total_score)
+    message = session.pop('message', '') # Get and clear flash message
+
+    # Optional list usage flags
+    use_nz = 'nz' in active_list_types
+    use_au = 'au' in active_list_types
+    use_tr = 'tr' in active_list_types
+
     print(f"--- [DEBUG index route] Center Letter: {center_letter}")
-    print(f"--- [DEBUG index route] Display Letters (sorted from session): {display_letters}")
+    print(f"--- [DEBUG index route] Display Letters (sorted from session): {all_letters}")
     print(f"--- [DEBUG index route] Outer Letters: {outer_letters}")
-    # --- END DEBUG LOGGING ---
 
+    # Render the main game page
     return render_template('index.html',
-                           letters=display_letters,
+                           letters=all_letters, # Pass sorted letters
                            center_letter=center_letter,
                            outer_letters=outer_letters,
-                           found_words=found_words,
-                           score=current_score,
+                           outer_positions=outer_positions, # <-- PASS POSITIONS
+                           score=score,
                            rank=rank,
-                           total_words=total_words_count,
-                           use_nz=session['use_nz'], # Pass list preferences
-                           use_au=session['use_au'],
-                           use_tr=session['use_tr'],
-                           message=session.pop('message', None)) # Display flash messages if any
-
+                           total_words=len(solutions),
+                           found_words=sorted(list(set(found_words))), # Pass unique sorted list
+                           message=message,
+                           use_nz=use_nz,
+                           use_au=use_au,
+                           use_tr=use_tr)
 
 @app.route('/guess', methods=['POST'])
 def handle_guess():

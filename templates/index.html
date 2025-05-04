@@ -49,16 +49,17 @@
                         <text class="hive-letter center-letter" x="0" y="0">{{ center_letter.upper() }}</text>
                     </g>
 
-                    <!-- Outer Circles - Calculate positions -->
-                    {# Angles in radians for 6 circles #}
-                    {% set angles = [3.14159 * -0.5, 3.14159 * -0.1667, 3.14159 * 0.1667, 3.14159 * 0.5, 3.14159 * 0.8333, 3.14159 * 1.1667] %} {# Approx angles: -90, -30, 30, 90, 150, 210 degrees #}
+                    <!-- Outer Circles - Use pre-calculated positions -->
+                    {# Angles in radians for 6 circles - CALCULATION MOVED TO BACKEND #}
+                    {# {% set angles = [3.14159 * -0.5, 3.14159 * -0.1667, 3.14159 * 0.1667, 3.14159 * 0.5, 3.14159 * 0.8333, 3.14159 * 1.1667] %} #}
                     {% for i in range(outer_letters|length) %}
-                        {% set angle = angles[i] %}
-                        {# Calculate x, y based on angle and outer_ring_radius #}
-                        {% set pos_x = center_pos[0] + outer_ring_radius * angle | cos %}
-                        {% set pos_y = center_pos[1] + outer_ring_radius * angle | sin %}
+                        {# {% set angle = angles[i] %} #}
+                        {# Calculate x, y based on angle and outer_ring_radius - MOVED TO BACKEND #}
+                        {# {% set pos_x = center_pos[0] + outer_ring_radius * angle | cos %} #}
+                        {# {% set pos_y = center_pos[1] + outer_ring_radius * angle | sin %} #}
+                        {% set pos = outer_positions[i] %} {# Get position from passed list #}
                         {% set letter = outer_letters[i] %}
-                        <g class="hive-cell-group outer-group" transform="translate({{ pos_x | round(2) }}, {{ pos_y | round(2) }})" data-letter="{{ letter }}">
+                        <g class="hive-cell-group outer-group" transform="translate({{ pos.x }}, {{ pos.y }})" data-letter="{{ letter }}">
                              <circle class="hive-cell outer" r="{{ circle_radius }}"></circle>
                             <text class="hive-letter outer-letter" x="0" y="0">{{ letter.upper() }}</text>
                         </g>
