@@ -13,7 +13,7 @@ VALID_CHARS_RE_SETUP = re.compile(r'^[a-z]+$')
 # IMPORTANT: Adjust CSV_WORD_COLUMN_INDEX if the word is not in the first column (index 0)
 CSV_WORD_COLUMN_INDEX = 0
 CSV_FILES = [
-    'data_sources/NGSL+with+SFI+(31K).xlsx - SFI adj.csv', # Relative path
+    'data_sources/ngsl_sfi_adj.csv', # Relative path - RENAMED
     'data_sources/SUP_lemmatized.csv' # Relative path
 ]
 # Note: This script now only populates the 'common' list type.
