@@ -54,7 +54,7 @@
                     <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
                         {# Use center_radius passed from backend #}
                         <circle class="hive-cell center" r="{{ center_radius }}"></circle>
-                        <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle">{{ center_letter.upper() }}</text>
+                        <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
                     </g>
 
                     {# --- Outer Segments and Letters --- #}
