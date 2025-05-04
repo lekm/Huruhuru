@@ -7,11 +7,12 @@ import sqlite3 # Now this should refer to the injected pysqlite3
 import subprocess # Added for init-db check
 import sys # Added for init-db check, and runtime debugging
 import time # Added for timing
-from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g, abort # Import abort
+from flask import Flask, render_template, request, session, jsonify, redirect, url_for, g, abort, current_app # Added current_app and logging
 import requests
 import click
 from flask.cli import with_appcontext
 import math # <-- ADDED IMPORT
+import logging # For better error logging
 
 # Import game logic from spelling_bee module
 import spelling_bee # Direct import
@@ -40,6 +41,11 @@ app = Flask(__name__, template_folder='../templates', static_folder='../static')
 # Read secret key from environment variable, with a fallback for local dev
 # IMPORTANT: Set a strong SECRET_KEY environment variable in production (Vercel settings)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or-use-env')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO) # Log info and above
+# Adjust Flask logger level if needed
+app.logger.setLevel(logging.INFO)
 
 # --- Flask CLI Command for DB Initialization ---
 @click.command('init-db')
@@ -83,39 +89,109 @@ def get_active_list_types_from_session():
     print(f"Active list types from session: {active_types}") # Debug log
     return active_types
 
-# --- Helper Function for New Game Setup ---
+# --- Helper Function for New Game Setup (MODIFIED) ---
 def setup_new_game(db_path, active_list_types):
-    """Sets up a new game by choosing letters and finding solutions."""
+    """Sets up a new game, updates session, returns success status."""
+    # Ensure active_list_types is valid
+    if not active_list_types or not isinstance(active_list_types, list):
+         app.logger.error(f"Invalid active_list_types provided to setup_new_game: {active_list_types}")
+         return False # Indicate failure
+
     try:
-        print(f"--- [setup_new_game] Starting setup with DB: {db_path}, Lists: {active_list_types}")
-        # 1. Choose letters (pangram-first approach)
+        app.logger.info(f"--- [setup_new_game] Starting setup with DB: {db_path}, Lists: {active_list_types}")
+        # 1. Choose letters (pangram-first approach) using selected lists
         letters_set, center_letter = spelling_bee.choose_letters(db_path, active_list_types)
-        print(f"--- [setup_new_game] Letters chosen: {letters_set}, Center: {center_letter}")
+        app.logger.info(f"--- [setup_new_game] Letters chosen: {letters_set}, Center: {center_letter}")
+
+        # Sort letters for consistent display order
+        all_letters_sorted = sorted(list(letters_set))
+        outer_letters_alpha = [l for l in all_letters_sorted if l != center_letter]
 
         # 2. Find valid words and create normalization map
         solutions, normalized_solution_map = spelling_bee.find_valid_words(db_path, letters_set, center_letter, active_list_types)
-        print(f"--- [setup_new_game] Solutions found: {len(solutions)}, Map size: {len(normalized_solution_map)}")
+        app.logger.info(f"--- [setup_new_game] Solutions found: {len(solutions)}, Map size: {len(normalized_solution_map)}")
 
         # 3. Calculate total score
         total_score = spelling_bee.calculate_total_score(solutions, letters_set)
-        print(f"--- [setup_new_game] Total score calculated: {total_score}")
+        app.logger.info(f"--- [setup_new_game] Total score calculated: {total_score}")
 
-        return letters_set, center_letter, solutions, normalized_solution_map, total_score
+        # --- Calculate Coordinates and Ordered Outer Letters ---        
+        viewBox_center_x = 75
+        viewBox_center_y = 75
+        center_radius = 25
+        outer_ring_end_radius = 65
+        letter_radius = center_radius + (outer_ring_end_radius - center_radius) / 2
+        num_segments = len(outer_letters_alpha) 
 
-    except ConnectionError as e:
-        print(f"!!! Database connection error during game setup using path: {db_path}. Error: {e}")
-        # Re-raise or handle appropriately - perhaps raise a custom exception?
-        raise RuntimeError(f"Could not connect to the word database: {e}") from e
-    except RuntimeError as e:
-        print(f"!!! Error generating puzzle: {e}")
-        # Re-raise the specific error
-        raise e
-    except Exception as e:
-        print(f"!!! Unexpected error during game setup: {e}")
-        # Log the full traceback for unexpected errors
-        import traceback
-        traceback.print_exc()
-        raise RuntimeError(f"An unexpected error occurred setting up the game: {e}") from e
+        outer_segments_data = []
+        ordered_outer_letters_for_js = [] 
+
+        if num_segments > 0:
+            segment_angle_deg = 360 / num_segments
+            segment_angle_rad = math.radians(segment_angle_deg)
+            start_angle_offset_rad = math.radians(-90 - (segment_angle_deg / 2)) 
+
+            letters_to_assign = list(outer_letters_alpha) 
+
+            for i in range(num_segments):
+                current_angle_rad = start_angle_offset_rad + i * segment_angle_rad
+                next_angle_rad = current_angle_rad + segment_angle_rad
+                letter_angle_rad = current_angle_rad + (segment_angle_rad / 2)
+
+                letter_x = letter_radius * math.cos(letter_angle_rad)
+                letter_y = letter_radius * math.sin(letter_angle_rad)
+
+                assigned_letter = letters_to_assign[i]
+                ordered_outer_letters_for_js.append(assigned_letter.upper())
+
+                 # Calculate segment path 
+                start_cx = center_radius * math.cos(current_angle_rad)
+                start_cy = center_radius * math.sin(current_angle_rad)
+                start_ox = outer_ring_end_radius * math.cos(current_angle_rad)
+                start_oy = outer_ring_end_radius * math.sin(current_angle_rad)
+                end_ox = outer_ring_end_radius * math.cos(next_angle_rad)
+                end_oy = outer_ring_end_radius * math.sin(next_angle_rad)
+                end_cx = center_radius * math.cos(next_angle_rad)
+                end_cy = center_radius * math.sin(next_angle_rad)
+                large_arc_flag = 0
+                sweep_flag_outer = 1
+                sweep_flag_inner = 0
+                fmt = ".2f"
+                path_d = (
+                    f"M {start_cx:{fmt}} {start_cy:{fmt}} "
+                    f"L {start_ox:{fmt}} {start_oy:{fmt}} "
+                    f"A {outer_ring_end_radius:{fmt}} {outer_ring_end_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_outer} {end_ox:{fmt}} {end_oy:{fmt}} "
+                    f"L {end_cx:{fmt}} {end_cy:{fmt}} "
+                    f"A {center_radius:{fmt}} {center_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_inner} {start_cx:{fmt}} {start_cy:{fmt}} "
+                    f"Z"
+                )
+                outer_segments_data.append({
+                    'letter': assigned_letter.upper(),
+                    'x': round(letter_x, 2),
+                    'y': round(letter_y, 2),
+                    'segment_path': path_d
+                })
+        # --- End Coordinate Calculation ---
+
+        # 4. Update Session with all necessary game state
+        session['letters'] = all_letters_sorted # Store sorted list
+        session['center_letter'] = center_letter
+        session['outer_letters_ordered'] = ordered_outer_letters_for_js # Store ordered outer letters specifically for JS animation
+        session['outer_segments_data'] = outer_segments_data # Store data needed by template render
+        session['solutions'] = list(solutions) # Store as list for JSON serialization
+        session['normalized_solution_map'] = normalized_solution_map # Store the map
+        session['found_words'] = []
+        session['score'] = 0
+        session['total_score'] = total_score
+        # Ensure active_list_types is also in session, but it should be set before calling this function
+        session.modified = True # Ensure session is saved
+
+        app.logger.info(f"--- [setup_new_game] Success! State updated in session.")
+        return True # Indicate success
+
+    except (ConnectionError, RuntimeError, ValueError, Exception) as e: # Catch broader errors
+        app.logger.error(f"!!! Error during game setup: {e}", exc_info=True) # Log full traceback
+        return False # Indicate failure
 
 # --- Helper Function to Calculate Rank ---
 def calculate_rank(score, total_score):
@@ -162,141 +238,48 @@ def check_db():
 
 @app.route('/')
 def index():
-    print("--- [RUNTIME] Request received for / route ---")
-    # Ensure DB exists before proceeding
-    check_db()
+    app.logger.info("--- Request received for / route ---")
+    # DB Check happens via @app.before_request
 
-    active_list_types = session.get('active_list_types', ['common'])
-    print(f"Active list types from session: {active_list_types}")
-
-    # Check if game state exists in session
-    if ('letters' not in session or 'center_letter' not in session or
-            'solutions' not in session or 'total_score' not in session): # Added total_score check
-        print("No full game state found in session, starting new game setup...")
-        try:
-            letters, center_letter, solutions, normalized_solution_map, total_score = setup_new_game(DATABASE_PATH, active_list_types)
-            session['letters'] = list(letters) # Store as list
-            session['center_letter'] = center_letter
-            session['solutions'] = list(solutions) # Store as list for JSON serialization
-            session['normalized_solution_map'] = normalized_solution_map # Store the map
-            session['found_words'] = []
-            session['score'] = 0
-            session['total_score'] = total_score
-            print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(solutions)}, Map Size: {len(normalized_solution_map)}, Total Score: {total_score}")
-        except (RuntimeError, ConnectionError) as e:
-            print(f"!!! Error during new game setup in / route: {e}")
-            # Render an error page or return a message?
-            # For now, let's re-raise to see it clearly in logs, but might need a user-friendly page
-            # Consider flashing a message and redirecting, or rendering a specific error template
-            abort(500, description=f"Failed to set up a new game: {e}")
-
-    # Retrieve game state from session
-    center_letter = session['center_letter']
-    all_letters = sorted(session['letters']) # Ensure consistent order for display
-    outer_letters = [l for l in all_letters if l != center_letter]
-    solutions = set(session['solutions']) # Convert back to set for efficient lookups later if needed
-    found_words = session.get('found_words', []) # Use .get for safety
-    score = session.get('score', 0) # Use .get for safety
-    total_score = session.get('total_score', 0) # Get total score
-
-    # --- Calculate Circular Layout Data ---
-    # Parameters (should match SVG viewBox and desired look)
-    viewBox_center_x = 75
-    viewBox_center_y = 75
-    center_radius = 25
-    # outer_ring_start_radius = center_radius + 5 # REMOVED - Segments will start from center circle edge
-    outer_ring_end_radius = 65 # Outer edge radius remains the same
-    # Adjust letter radius calculation to be between center circle edge and outer edge
-    letter_radius = center_radius + (outer_ring_end_radius - center_radius) / 2
-    num_segments = len(outer_letters)
-
-    outer_segments_data = []
-
-    if num_segments > 0: # Avoid division by zero if no outer letters
-        segment_angle_deg = 360 / num_segments
-        segment_angle_rad = math.radians(segment_angle_deg)
-        # Start angle offset remains the same
-        start_angle_offset_rad = math.radians(-90 - (segment_angle_deg / 2))
-
-        for i, letter in enumerate(outer_letters):
-            # Calculate angles for the current segment
-            current_angle_rad = start_angle_offset_rad + i * segment_angle_rad
-            next_angle_rad = current_angle_rad + segment_angle_rad
-
-            # --- Calculate Segment Path Points (Revised) ---
-            # Start point on center circle edge
-            start_cx = center_radius * math.cos(current_angle_rad)
-            start_cy = center_radius * math.sin(current_angle_rad)
-            # Point on outer radius edge (start angle)
-            start_ox = outer_ring_end_radius * math.cos(current_angle_rad)
-            start_oy = outer_ring_end_radius * math.sin(current_angle_rad)
-            # Point on outer radius edge (end angle)
-            end_ox = outer_ring_end_radius * math.cos(next_angle_rad)
-            end_oy = outer_ring_end_radius * math.sin(next_angle_rad)
-            # End point on center circle edge
-            end_cx = center_radius * math.cos(next_angle_rad)
-            end_cy = center_radius * math.sin(next_angle_rad)
-
-            # --- Calculate Letter Position (relative to center 0,0) --- (Calculation adjusted slightly due to new letter_radius def)
-            letter_angle_rad = current_angle_rad + (segment_angle_rad / 2) # Midpoint angle
-            letter_x = letter_radius * math.cos(letter_angle_rad)
-            letter_y = letter_radius * math.sin(letter_angle_rad)
-
-            # --- Format SVG Path 'd' attribute (Revised) ---
-            large_arc_flag = 0 # Segment angle is always < 180
-            sweep_flag_outer = 1 # Clockwise for outer arc
-            sweep_flag_inner = 0 # Counter-clockwise sweep along the center circle radius edge
-
-            # Format numbers to avoid excessive precision in HTML
-            fmt = ".2f"
-            path_d = (
-                f"M {start_cx:{fmt}} {start_cy:{fmt}} "  # Move to center circle edge start
-                f"L {start_ox:{fmt}} {start_oy:{fmt}} "  # Line to outer edge start
-                f"A {outer_ring_end_radius:{fmt}} {outer_ring_end_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_outer} {end_ox:{fmt}} {end_oy:{fmt}} " # Outer arc
-                f"L {end_cx:{fmt}} {end_cy:{fmt}} "      # Line to center circle edge end
-                f"A {center_radius:{fmt}} {center_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_inner} {start_cx:{fmt}} {start_cy:{fmt}} " # Inner arc along center circle edge
-                f"Z" # Close path
-            )
-
-            outer_segments_data.append({
-                'letter': letter.upper(),
-                'x': round(letter_x, 2),
-                'y': round(letter_y, 2),
-                'segment_path': path_d
-            })
-
-    # --- End Calculate Circular Layout Data ---
-
+    # Try to load existing game state from session
+    center_letter = session.get('center_letter')
+    outer_segments_data = session.get('outer_segments_data') # Get pre-calculated data if exists
+    score = session.get('score', 0)
+    total_score = session.get('total_score', 0) # Needed for rank calc
+    # Calculate rank based on loaded score/total_score
     rank = calculate_rank(score, total_score)
+    found_words = session.get('found_words', [])
     message = session.pop('message', '') # Get and clear flash message
 
-    # Optional list usage flags
+    active_list_types = session.get('active_list_types', ['common'])
     use_nz = 'nz' in active_list_types
     use_au = 'au' in active_list_types
     use_tr = 'tr' in active_list_types
 
-    print(f"--- [DEBUG index route] Center Letter: {center_letter}")
-    print(f"--- [DEBUG index route] Outer Letters: {outer_letters}")
-    print(f"--- [DEBUG index route] Outer Segments Data: {outer_segments_data}") # Log the calculated data
+    # If there's no game in session, these will be None/empty
+    app.logger.info(f"Rendering index page. Game in session: {bool(center_letter)}")
+    app.logger.debug(f"Center: {center_letter}, Segments Data: {bool(outer_segments_data)}")
+
+    # Need to ensure these parameters are always passed, even if None/empty
+    viewBox_center_x = 75
+    viewBox_center_y = 75
+    center_radius = 25
 
     # Render the main game page
     return render_template('index.html',
-                           # letters=all_letters, # No longer needed directly? Maybe keep for shuffle? Check script.js if needed
-                           center_letter=center_letter,
-                           outer_letters=outer_letters, # Keep for shuffle logic in JS if it uses this
-                           # outer_positions=outer_positions, # Remove old hexagonal positions
-                           outer_segments_data=outer_segments_data, # Pass new circular data
+                           center_letter=center_letter, # Can be None
+                           outer_segments_data=outer_segments_data or [], # Pass empty list if None
                            score=score,
                            rank=rank,
-                           total_words=len(solutions),
-                           found_words=sorted(list(set(found_words))), # Pass unique sorted list
+                           total_words=len(session.get('solutions', [])), # Calculate from session solutions
+                           found_words=sorted(list(set(found_words))),
                            message=message,
                            use_nz=use_nz,
                            use_au=use_au,
                            use_tr=use_tr,
-                           viewBox_center_x=viewBox_center_x, # Pass center coordinates
+                           viewBox_center_x=viewBox_center_x,
                            viewBox_center_y=viewBox_center_y,
-                           center_radius=center_radius # Pass center radius
+                           center_radius=center_radius
                            )
 
 @app.route('/guess', methods=['POST'])
@@ -435,21 +418,74 @@ def update_settings():
 
     return redirect(url_for('index')) # Redirect back to index to generate new game
 
+@app.route('/get_dictionary_options')
+def get_dictionary_options():
+    # Define your available dictionaries (could be read from config/db)
+    # Ensure 'common' is always available if it's non-optional
+    available_dictionaries = ['common', 'nz', 'au', 'tr'] # Match settings form keys
+    current_selections = session.get('active_list_types', ['common']) # Get current or default
+    app.logger.info(f"Providing dictionary options: {available_dictionaries}, selected: {current_selections}")
+    return jsonify({
+        'options': available_dictionaries,
+        'selected': current_selections
+    })
 
-@app.route('/new_game')
-def new_game():
-    """Clears the session to start a new game with current list settings."""
-    # Clear only game-specific keys, keep list preferences
-    session.pop('letters', None)
-    session.pop('center_letter', None)
-    session.pop('valid_solutions', None)
-    session.pop('total_score', None)
-    session.pop('found_words', None)
-    session.pop('current_score', None)
-    session['message'] = "New game started!" # Flash message
-    session.modified = True
-    print("Starting new game (keeping list settings), session cleared.") # Server log
-    return redirect(url_for('index'))
+@app.route('/start_game', methods=['POST'])
+def start_game():
+    start_time = time.time()
+    app.logger.info("--- [START /start_game] ---")
+    try:
+        data = request.get_json()
+        if not data:
+             return jsonify({'success': False, 'error': 'Invalid request format'}), 400
+
+        selected_list_types = data.get('dictionaries')
+
+        # Validate input
+        available_options = ['common', 'nz', 'au', 'tr'] # Replace with actual source if dynamic
+        if (not selected_list_types or
+                not isinstance(selected_list_types, list) or
+                not all(item in available_options for item in selected_list_types)):
+            app.logger.warning(f"Invalid dictionary selection received: {selected_list_types}")
+            return jsonify({'success': False, 'error': 'Invalid dictionary selection provided'}), 400
+
+        # Ensure 'common' is always included if it's mandatory
+        if 'common' not in selected_list_types:
+             app.logger.warning(f"'common' list missing from selection: {selected_list_types}. Adding it.")
+             selected_list_types.insert(0, 'common') 
+             selected_list_types = list(set(selected_list_types)) 
+
+        # Update session *before* calling setup_new_game
+        session['active_list_types'] = selected_list_types
+        app.logger.info(f"Updated session active_list_types: {selected_list_types}")
+
+        # Generate the new game using the selected lists
+        success_flag = setup_new_game(DATABASE_PATH, selected_list_types) 
+
+        if not success_flag:
+             app.logger.error("setup_new_game failed to generate puzzle.")
+             return jsonify({'success': False, 'error': 'Failed to generate game puzzle with selected lists.'}), 500
+
+        # Retrieve the necessary letters from the session after successful setup
+        center_letter = session.get('center_letter')
+        ordered_outer_letters = session.get('outer_letters_ordered')
+
+        if not center_letter or not ordered_outer_letters:
+             app.logger.error("Failed to retrieve letters from session after successful game setup.")
+             return jsonify({'success': False, 'error': 'Internal server error retrieving game data.'}), 500
+
+        end_time = time.time()
+        app.logger.info(f"--- [END /start_game] Success! Time: {end_time - start_time:.2f}s ---")
+        # Return success and the letters needed for frontend animation/display
+        return jsonify({
+            'success': True,
+            'outer_letters': ordered_outer_letters, # Send the ordered outer letters
+            'center_letter': center_letter.upper() # Ensure center is uppercase
+         })
+
+    except Exception as e:
+        app.logger.error(f"!!! Unhandled error in /start_game: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error processing request.'}), 500
 
 # --- Definition Route (Remains largely unchanged) ---
 @app.route('/definition/<word>')

@@ -72,6 +72,7 @@
                                       fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
                                 {# Use pre-calculated position from segment_data #}
                                 <text class="hive-letter outer-letter"
+                                      id="outer-letter-{{ loop.index0 }}" {# ID for JS targeting #}
                                       x="{{ segment_data.x }}"
                                       y="{{ segment_data.y }}"
                                       text-anchor="middle"
@@ -156,6 +157,24 @@
             </div>
         </div>
         <!-- End Settings Modal Structure -->
+
+        <!-- Dictionary Selection Modal -->
+        <div id="dictionary-modal" class="modal-overlay" style="display: none;"> {# Reuse modal-overlay style, hide initially #}
+            <div class="modal-content"> {# Reuse modal-content style #}
+                <button id="dictionary-modal-close-btn" class="modal-close-button">&times;</button> {# Reuse close button style #}
+                <h2>Select Word Lists</h2>
+                <div id="dictionary-options-container" class="dictionary-options">
+                    <p>Select the word lists to include:</p>
+                    {# Checkboxes will be populated here by JS #}
+                    <div id="dictionary-options-loading" style="display: none;">Loading options...</div>
+                    <div id="dictionary-options-error" style="display: none; color: red;">Could not load options.</div>
+                </div>
+                <div class="modal-actions">
+                     <button id="confirm-start-game-btn" class="button-primary modal-button">Start New Game</button> {# Add specific classes if needed #}
+                </div>
+            </div>
+        </div>
+        <!-- End Dictionary Selection Modal -->
 
     </div> <!-- End of aspect-ratio-wrapper -->
 
