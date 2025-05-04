@@ -828,12 +828,20 @@ h1 {
     }
 }
 
-/* Apply to the new inner group containing the segments */
+/* Base state for the spinning element */
+#spinning-part, .spinning-part {
+    /* Define the origin relative to the parent's translated center (0,0 is correct here) */
+    transform-origin: 0px 0px;
+    /* Optional: Add transition for smoother start/stop if needed, but might interfere */
+    /* transition: transform 0.2s ease-out; */
+}
+
+/* Apply animation when .spinning class is added */
 .spinning-part.spinning {
-    /* Correct origin, new duration, weighty easing, multiple rotations */
+    /* Apply the animation */
     animation: spin 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    /* Use 'forwards' to keep the final state (1080deg) until JS removes the class */
-    transform-origin: 0px 0px; /* Try rotating around the element's own top-left (if it's already translated) */
+    /* Origin is already set above, but can be repeated here for clarity/redundancy */
+    transform-origin: 0px 0px; 
 }
 
 /* Style for letters during reveal (optional fade-in/scale) */
