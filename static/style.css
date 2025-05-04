@@ -32,9 +32,10 @@ h1 {
 
 /* Restore wrapper */
 .aspect-ratio-wrapper {
-    aspect-ratio: 9 / 16;
+    /* aspect-ratio: 9 / 16; */ /* Original */
+    aspect-ratio: 9 / 15.2; /* Reduced height by ~5% */
     max-height: 98vh; /* Use slightly more height */
-    max-width: calc(98vh * (9 / 16));
+    max-width: calc(98vh * (9 / 15.2)); /* Adjust max-width calculation accordingly */
 
     /* Fallback attempt */
     width: 100%; /* CHANGED: Use 100% width */
