@@ -40,11 +40,18 @@ def init_db(db_path='word_database.db'): # Keep default for direct script runnin
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
+        # --- NEW: Drop table first to ensure schema changes apply ---
+        print("Dropping existing 'words' table (if it exists)...")
+        cursor.execute("DROP TABLE IF EXISTS words;")
+        conn.commit() # Commit the drop before recreating
+        print("Table dropped.")
+        # --- END NEW ---
+
         # Create table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS words (
                 word TEXT PRIMARY KEY,
-                list_type TEXT NOT NULL CHECK(list_type IN ('common', 'nz', 'au', 'tr'))
+                list_type TEXT NOT NULL CHECK(list_type IN ('common', 'nz', 'au', 'tr', 'csw21'))
             )
         ''')
         conn.commit()

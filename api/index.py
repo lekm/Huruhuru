@@ -1,6 +1,6 @@
 # app.py
 # Inject pysqlite3 before any other imports that might load sqlite3
-import _inject_pysqlite # Direct import
+import _inject_pysqlite # Direct import -- Temporarily commented out for local init-db
 
 import os
 import sqlite3 # Now this should refer to the injected pysqlite3
@@ -20,6 +20,13 @@ import spelling_bee # Direct import
 import database_setup # Direct import
 # Import the normalization function
 # from spelling_bee import normalize_word # Can use spelling_bee.normalize_word
+
+# --- Add project root to sys.path --- START
+api_dir_for_path = os.path.dirname(os.path.abspath(__file__))
+project_root_for_path = os.path.dirname(api_dir_for_path)
+if project_root_for_path not in sys.path:
+    sys.path.insert(0, project_root_for_path)
+# --- Add project root to sys.path --- END
 
 # --- Re-calculate paths needed by the app --- 
 api_dir = os.path.abspath(os.path.dirname(__file__))
@@ -291,12 +298,20 @@ def handle_guess():
     # Retrieve game state from session
     letters_set = set(session['letters'])
     center_letter = session['center_letter']
-    # Retrieve the normalization map
-    solution_map = session.get('solution_map', {}) # Get map from session
-    # Get canonical found words (potentially with macrons)
-    found_words_set = set(session['found_words'])
-    current_score = session['current_score']
-    total_possible_score = session['total_score']
+    solution_map = session.get('normalized_solution_map', {}) # Get map from session
+    found_words_set = set(session.get('found_words', [])) # Use get with default
+    current_score = session.get('score', 0) # Use get with default
+    total_possible_score = session.get('total_score', 0) # Use get with default
+
+    # === Add Logging Start ===
+    app.logger.info(f"[DEBUG /guess] Session state at START of guess handling:")
+    app.logger.info(f"  - letters: {session.get('letters')}")
+    app.logger.info(f"  - center_letter: {center_letter}") # Already retrieved
+    app.logger.info(f"  - solutions length: {len(session.get('solutions', []))}") # Re-fetch for logging
+    app.logger.info(f"  - norm_map length: {len(solution_map)}") # Use retrieved map
+    app.logger.info(f"  - total_score: {total_possible_score}") # Use retrieved score
+    app.logger.info(f"  - User guess: '{guess}', Normalized guess: '{spelling_bee.normalize_word(guess)}'")
+    # === Add Logging End ===
 
     message = ""
     status = "invalid" # Default status
@@ -422,13 +437,27 @@ def update_settings():
 def get_dictionary_options():
     # Define your available dictionaries (could be read from config/db)
     # Ensure 'common' is always available if it's non-optional
-    available_dictionaries = ['common', 'nz', 'au', 'tr'] # Match settings form keys
-    current_selections = session.get('active_list_types', ['common']) # Get current or default
-    app.logger.info(f"Providing dictionary options: {available_dictionaries}, selected: {current_selections}")
-    return jsonify({
-        'options': available_dictionaries,
-        'selected': current_selections
-    })
+    AVAILABLE_DICTIONARIES = {
+        'common': {'name': 'Common Words', 'description': 'Standard English words (Default)', 'optional': False},
+        'te_reo': {'name': 'Te Reo Māori', 'description': 'Words from Te Reo Māori', 'optional': True},
+        'nz_slang': {'name': 'NZ Slang', 'description': 'Common New Zealand slang terms', 'optional': True},
+        # Add the new dictionary option
+        'csw21': {'name': 'Collins Scrabble Words 2021', 'description': 'Official international Scrabble list (Aus/NZ/UK)', 'optional': True}
+    }
+    # Get current selections from session to pre-check boxes
+    current_selections = session.get('active_list_types', ['common']) # Default to common if not set
+
+    options_with_state = []
+    for key, info in AVAILABLE_DICTIONARIES.items():
+        options_with_state.append({
+            'id': key,
+            'name': info['name'],
+            'description': info['description'],
+            'optional': info.get('optional', True), # Assume optional if not specified
+            'checked': key in current_selections
+        })
+
+    return jsonify(options_with_state)
 
 @app.route('/start_game', methods=['POST'])
 def start_game():
@@ -469,6 +498,15 @@ def start_game():
         # Retrieve the necessary letters from the session after successful setup
         center_letter = session.get('center_letter')
         ordered_outer_letters = session.get('outer_letters_ordered')
+
+        # === Add Logging Start ===
+        app.logger.info(f"[DEBUG /start_game] Session state AFTER setup:")
+        app.logger.info(f"  - letters: {session.get('letters')}")
+        app.logger.info(f"  - center_letter: {session.get('center_letter')}")
+        app.logger.info(f"  - solutions length: {len(session.get('solutions', []))}")
+        app.logger.info(f"  - norm_map length: {len(session.get('normalized_solution_map', {}))}")
+        app.logger.info(f"  - total_score: {session.get('total_score')}")
+        # === Add Logging End ===
 
         if not center_letter or not ordered_outer_letters:
              app.logger.error("Failed to retrieve letters from session after successful game setup.")
