@@ -166,6 +166,7 @@ def find_valid_words(db_path: str, letters: set[str], center_letter: str, active
 
         print(f"Found {len(valid_solutions)} valid words from DB query and filtering.")
         print(f"Created normalization map with {len(normalized_solution_map)} entries.") # Log map size
+        print(f"--- [DEBUG find_valid_words] Final Valid Solutions (First 50): {sorted(list(valid_solutions))[:50]}")
         return valid_solutions, normalized_solution_map # Return set and map
 
     except sqlite3.Error as e:
