@@ -204,9 +204,10 @@ def index():
     viewBox_center_x = 75
     viewBox_center_y = 75
     center_radius = 25
-    outer_ring_start_radius = center_radius + 5
-    outer_ring_end_radius = 65
-    letter_radius = (outer_ring_start_radius + outer_ring_end_radius) / 2
+    # outer_ring_start_radius = center_radius + 5 # REMOVED - Segments will start from center circle edge
+    outer_ring_end_radius = 65 # Outer edge radius remains the same
+    # Adjust letter radius calculation to be between center circle edge and outer edge
+    letter_radius = center_radius + (outer_ring_end_radius - center_radius) / 2
     num_segments = len(outer_letters)
 
     outer_segments_data = []
@@ -214,7 +215,7 @@ def index():
     if num_segments > 0: # Avoid division by zero if no outer letters
         segment_angle_deg = 360 / num_segments
         segment_angle_rad = math.radians(segment_angle_deg)
-        # Start angle offset: -90 degrees (top) minus half a segment angle to center the first segment peak at the top
+        # Start angle offset remains the same
         start_angle_offset_rad = math.radians(-90 - (segment_angle_deg / 2))
 
         for i, letter in enumerate(outer_letters):
@@ -222,38 +223,38 @@ def index():
             current_angle_rad = start_angle_offset_rad + i * segment_angle_rad
             next_angle_rad = current_angle_rad + segment_angle_rad
 
-            # --- Calculate Segment Path Points (relative to center 0,0) ---
-            # Inner arc start
-            start_x1 = outer_ring_start_radius * math.cos(current_angle_rad)
-            start_y1 = outer_ring_start_radius * math.sin(current_angle_rad)
-            # Outer arc start
-            end_x1 = outer_ring_end_radius * math.cos(current_angle_rad)
-            end_y1 = outer_ring_end_radius * math.sin(current_angle_rad)
-            # Outer arc end
-            start_x2 = outer_ring_end_radius * math.cos(next_angle_rad)
-            start_y2 = outer_ring_end_radius * math.sin(next_angle_rad)
-            # Inner arc end
-            end_x2 = outer_ring_start_radius * math.cos(next_angle_rad)
-            end_y2 = outer_ring_start_radius * math.sin(next_angle_rad)
+            # --- Calculate Segment Path Points (Revised) ---
+            # Start point on center circle edge
+            start_cx = center_radius * math.cos(current_angle_rad)
+            start_cy = center_radius * math.sin(current_angle_rad)
+            # Point on outer radius edge (start angle)
+            start_ox = outer_ring_end_radius * math.cos(current_angle_rad)
+            start_oy = outer_ring_end_radius * math.sin(current_angle_rad)
+            # Point on outer radius edge (end angle)
+            end_ox = outer_ring_end_radius * math.cos(next_angle_rad)
+            end_oy = outer_ring_end_radius * math.sin(next_angle_rad)
+            # End point on center circle edge
+            end_cx = center_radius * math.cos(next_angle_rad)
+            end_cy = center_radius * math.sin(next_angle_rad)
 
-            # --- Calculate Letter Position (relative to center 0,0) ---
+            # --- Calculate Letter Position (relative to center 0,0) --- (Calculation adjusted slightly due to new letter_radius def)
             letter_angle_rad = current_angle_rad + (segment_angle_rad / 2) # Midpoint angle
             letter_x = letter_radius * math.cos(letter_angle_rad)
             letter_y = letter_radius * math.sin(letter_angle_rad)
 
-            # --- Format SVG Path 'd' attribute ---
+            # --- Format SVG Path 'd' attribute (Revised) ---
             large_arc_flag = 0 # Segment angle is always < 180
             sweep_flag_outer = 1 # Clockwise for outer arc
-            sweep_flag_inner = 0 # Counter-clockwise for inner arc
+            sweep_flag_inner = 0 # Counter-clockwise sweep along the center circle radius edge
 
             # Format numbers to avoid excessive precision in HTML
             fmt = ".2f"
             path_d = (
-                f"M {start_x1:{fmt}} {start_y1:{fmt}} " # Move to inner arc start
-                f"L {end_x1:{fmt}} {end_y1:{fmt}} "     # Line to outer arc start
-                f"A {outer_ring_end_radius:{fmt}} {outer_ring_end_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_outer} {start_x2:{fmt}} {start_y2:{fmt}} " # Outer arc
-                f"L {end_x2:{fmt}} {end_y2:{fmt}} "     # Line to inner arc end
-                f"A {outer_ring_start_radius:{fmt}} {outer_ring_start_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_inner} {start_x1:{fmt}} {start_y1:{fmt}} " # Inner arc (reverse sweep)
+                f"M {start_cx:{fmt}} {start_cy:{fmt}} "  # Move to center circle edge start
+                f"L {start_ox:{fmt}} {start_oy:{fmt}} "  # Line to outer edge start
+                f"A {outer_ring_end_radius:{fmt}} {outer_ring_end_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_outer} {end_ox:{fmt}} {end_oy:{fmt}} " # Outer arc
+                f"L {end_cx:{fmt}} {end_cy:{fmt}} "      # Line to center circle edge end
+                f"A {center_radius:{fmt}} {center_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_inner} {start_cx:{fmt}} {start_cy:{fmt}} " # Inner arc along center circle edge
                 f"Z" # Close path
             )
 
