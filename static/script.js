@@ -516,14 +516,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset other UI elements if needed (score/rank are handled by updateUIForNewGame)
         if (currentGuessDisplay) currentGuessDisplay.innerHTML = '<span>&nbsp;</span>';
         currentGuess = '';
+        
+        // --- Force Reflow (Attempt to fix animation timing) --- >
+        void targetSpinningPart.offsetHeight; // Reading offsetHeight forces reflow
+        // < ---------------------------------------------------
 
         // 2. Trigger Spin Animation
+        console.log("Adding .spinning class to:", targetSpinningPart); // Log before adding
         targetSpinningPart.classList.add('spinning');
+        console.log("Class list after add:", targetSpinningPart.classList); // Log after adding
 
         // 3. Set timeout for post-animation population
         const spinDuration = 3000; 
         setTimeout(() => {
+            console.log("Removing .spinning class from:", targetSpinningPart); // Log before removing
             targetSpinningPart.classList.remove('spinning'); // Stop visual spin
+            console.log("Class list after remove:", targetSpinningPart.classList); // Log after removing
 
             // 4. Populate Outer Letters Dynamically
             let revealDelay = 200;
