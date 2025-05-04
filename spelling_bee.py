@@ -150,6 +150,7 @@ def find_valid_words(db_path: str, letters: set[str], center_letter: str, active
     try:
         cursor.execute(sql_query, query_params)
         candidate_words = cursor.fetchall() # Fetch all potential words
+        print(f"--- [DEBUG find_valid_words] SQL Query Candidates (Center: {center_letter}): {[row[0] for row in candidate_words[:20]]}") # Print first 20 candidates
 
         # Filter candidates in Python
         allowed_chars = set(letters) # Use a set for efficient lookup
