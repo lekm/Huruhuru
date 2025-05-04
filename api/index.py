@@ -89,7 +89,7 @@ def setup_new_game(db_path, active_list_types):
     try:
         print(f"--- [setup_new_game] Starting setup with DB: {db_path}, Lists: {active_list_types}")
         # 1. Choose letters (pangram-first approach)
-        letters_set, center_letter = spelling_bee.choose_letters_pangram_first(db_path, active_list_types)
+        letters_set, center_letter = spelling_bee.choose_letters(db_path, active_list_types)
         print(f"--- [setup_new_game] Letters chosen: {letters_set}, Center: {center_letter}")
 
         # 2. Find valid words and create normalization map
