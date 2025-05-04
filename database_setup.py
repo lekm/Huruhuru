@@ -13,8 +13,8 @@ VALID_CHARS_RE_SETUP = re.compile(r'^[a-z]+$')
 # IMPORTANT: Adjust CSV_WORD_COLUMN_INDEX if the word is not in the first column (index 0)
 CSV_WORD_COLUMN_INDEX = 0
 CSV_FILES = [
-    '/Users/liamclarkin/Downloads/NGSL+with+SFI+(31K).xlsx - SFI adj.csv',
-    '/Users/liamclarkin/Downloads/SUP_lemmatized.csv'
+    'data_sources/NGSL+with+SFI+(31K).xlsx - SFI adj.csv', # Relative path
+    'data_sources/SUP_lemmatized.csv' # Relative path
 ]
 # Note: This script now only populates the 'common' list type.
 # To add 'nz', 'au', 'tr' words, you would need separate source files

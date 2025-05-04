@@ -46,16 +46,19 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-replace-in-prod-or
 def init_db_command():
     """Clear the existing data and create new tables."""
     try:
-        # Calculate the CORRECT path inside the 'api' directory
-        api_dir = os.path.abspath(os.path.dirname(__file__))
-        target_db_path = os.path.join(api_dir, 'word_database.db')
+        # Use the project root directory (calculated earlier as 'basedir')
+        # Ensure 'basedir' is defined globally or recalculated if needed
+        # If basedir is not accessible here, recalculate: 
+        # api_dir_local = os.path.abspath(os.path.dirname(__file__))
+        # basedir_local = os.path.dirname(api_dir_local)
+        target_db_path = os.path.join(basedir, 'word_database.db') # Use project root
 
-        # Ensure the api directory exists (should already, but good practice)
-        os.makedirs(api_dir, exist_ok=True)
+        # Ensure the *project root* directory exists (it definitely should)
+        # os.makedirs(basedir, exist_ok=True) # Probably unnecessary
         
         print(f"--- [Flask init-db command] Target DB path: {target_db_path}") # Log the path being used
 
-        # Pass the CORRECT path (inside api/) to the setup function
+        # Pass the CORRECT path (project root) to the setup function
         database_setup.init_db(target_db_path)
         click.echo('Initialized the database.')
     except Exception as e:
