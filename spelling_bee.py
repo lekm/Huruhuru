@@ -164,13 +164,16 @@ def find_valid_words(db_path: str, letters: set[str], center_letter: str, active
         FROM words
         WHERE list_type IN ({placeholders})
           AND LENGTH(word) >= ?
+          AND instr(word, ?) > 0
     """
-    query_params = active_list_types + [MIN_WORD_LENGTH]
+    # Parameters: list types, min length, center letter
+    query_params = active_list_types + [MIN_WORD_LENGTH, center_letter] 
 
     try:
+        print(f"--- [DEBUG find_valid_words] Executing SQL: {sql_query} with params {query_params}") # Log query
         cursor.execute(sql_query, query_params)
         candidate_words = cursor.fetchall() # Fetch all potential words
-        # print(f"--- [DEBUG find_valid_words] SQL Query Candidates (Center: {center_letter}): {[row[0] for row in candidate_words[:20]]}") # Print first 20 candidates
+        print(f"--- [DEBUG find_valid_words] Candidates after SQL filter: {len(candidate_words)}") # Log count after SQL
 
         # Filter candidates in Python using normalized forms
         # The input 'letters' set is already normalized by choose_letters
