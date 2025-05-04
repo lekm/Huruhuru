@@ -83,6 +83,59 @@ def get_active_list_types_from_session():
     print(f"Active list types from session: {active_types}") # Debug log
     return active_types
 
+# --- Helper Function for New Game Setup ---
+def setup_new_game(db_path, active_list_types):
+    """Sets up a new game by choosing letters and finding solutions."""
+    try:
+        print(f"--- [setup_new_game] Starting setup with DB: {db_path}, Lists: {active_list_types}")
+        # 1. Choose letters (pangram-first approach)
+        letters_set, center_letter = spelling_bee.choose_letters_pangram_first(db_path, active_list_types)
+        print(f"--- [setup_new_game] Letters chosen: {letters_set}, Center: {center_letter}")
+
+        # 2. Find valid words and create normalization map
+        solutions, normalized_solution_map = spelling_bee.find_valid_words(db_path, letters_set, center_letter, active_list_types)
+        print(f"--- [setup_new_game] Solutions found: {len(solutions)}, Map size: {len(normalized_solution_map)}")
+
+        # 3. Calculate total score
+        total_score = spelling_bee.calculate_total_score(solutions, letters_set)
+        print(f"--- [setup_new_game] Total score calculated: {total_score}")
+
+        return letters_set, center_letter, solutions, normalized_solution_map, total_score
+
+    except ConnectionError as e:
+        print(f"!!! Database connection error during game setup using path: {db_path}. Error: {e}")
+        # Re-raise or handle appropriately - perhaps raise a custom exception?
+        raise RuntimeError(f"Could not connect to the word database: {e}") from e
+    except RuntimeError as e:
+        print(f"!!! Error generating puzzle: {e}")
+        # Re-raise the specific error
+        raise e
+    except Exception as e:
+        print(f"!!! Unexpected error during game setup: {e}")
+        # Log the full traceback for unexpected errors
+        import traceback
+        traceback.print_exc()
+        raise RuntimeError(f"An unexpected error occurred setting up the game: {e}") from e
+
+# --- Helper Function to Calculate Rank ---
+def calculate_rank(score, total_score):
+    """Calculates the player's rank based on score.
+    (Ensure this matches spelling_bee.get_rank if kept there)
+    """
+    if total_score == 0: # Avoid division by zero
+        return "Beginner"
+    percentage = (score / total_score) * 100
+    # Rank thresholds (adjust as needed)
+    if percentage >= 100: return "Queen Bee!"
+    if percentage >= 80: return "Genius"
+    if percentage >= 60: return "Amazing"
+    if percentage >= 40: return "Great"
+    if percentage >= 25: return "Nice"
+    if percentage >= 15: return "Solid"
+    if percentage >= 8: return "Good"
+    if percentage >= 3: return "Moving Up"
+    return "Beginner"
+
 # --- Flask Routes ---
 
 @app.before_request
