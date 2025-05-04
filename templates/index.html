@@ -35,34 +35,30 @@
                     </div>
                 </div>
                 
-                {# --- Always render dictionary panel containers --- #}
-                <div class="possible-remaining-panel"> 
-                     <div class="dict-stats-list">
-                        {# --- Conditionally render the content --- #}
+                {# --- Dictionary Progress Container (Always Render) --- #}
+                <div class="possible-remaining-panel">
+                     <div id="dict-stats-list" class="dict-stats-list"> {# Added ID here #}
+                        {# Conditionally render dictionary progress items #}
                         {% if display_stats %}
                             {% for stat in display_stats %}
-                            <div class="dict-stat-item" data-list-key="{{ stat.key }}">
-                                <span class="dict-icon-area">
-                                    {% if stat.icon_type == 'emoji' %}
-                                        <span class="dict-icon-emoji">{{ stat.icon_value }}</span>
-                                    {% elif stat.icon_type == 'image' and stat.icon_value %}
-                                        <img src="{{ stat.icon_value }}" alt="{{ stat.label }} icon" class="dict-icon-img">
-                                    {% endif %}
-                                </span>
-                                <span class="dict-label">{{ stat.label }}:</span>
-                                <span class="dict-counts">
-                                    <span class="dict-found-count" id="found-count-{{ stat.key }}">{{ stat.found }}</span> / <span class="dict-total-count">{{ stat.total }}</span> found
-                                </span>
-                            </div>
+                                <div class="dict-stat-item" data-list-key="{{ stat.key }}">
+                                    <span class="dict-icon-area">
+                                        {% if stat.icon_type == 'emoji' %}
+                                            <span class="dict-icon-emoji">{{ stat.icon_value }}</span>
+                                        {% elif stat.icon_type == 'image' and stat.icon_value %}
+                                            <img src="{{ stat.icon_value }}" alt="{{ stat.label }} icon" class="dict-icon-img">
+                                        {% endif %}
+                                    </span>
+                                    <span class="dict-label">{{ stat.label }}:</span>
+                                    <span class="dict-counts">
+                                        <span class="dict-found-count" id="found-count-{{ stat.key }}">{{ stat.found }}</span> / <span class="dict-total-count">{{ stat.total }}</span> found
+                                    </span>
+                                </div>
                             {% endfor %}
-                        {% else %}
-                            {# Optionally, add a placeholder when no stats are displayed #}
-                            {# <p class="no-stats-placeholder">Start a new game to see progress.</p> #}
                         {% endif %}
-                        {# --- End conditional content --- #}
                     </div>
                 </div>
-                {# --- End dictionary panel --- #}
+                {# --- End Dictionary Progress Container --- #}
             </div>
 
             <div id="message-area">
@@ -77,58 +73,49 @@
             <!-- Hive, Guess Display, Controls - Moved Down -->
             <div class="interaction-area"> <!-- New container for bottom elements -->
                 <div class="hive-container">
-                    {# Adjusted viewBox for potential clipping #}
                     <svg id="hive-svg" viewBox="-2 -2 154 154">
-                        {# --- SVG Definitions --- #}
                         <defs>
-                            {# Define colors - these could also come from backend if needed #}
                             {% set pale_yellow = '#fffacd' %}
                             {% set white_color = '#ffffff' %}
                         </defs>
 
-                        {# --- Parameters (now mostly coming from backend) --- #}
-                        {# Removed Jinja calculations for angles, radii, points #}
-
-                        {# --- Center Circle --- #}
-                        {# Use viewBox center passed from backend for transform #}
-                        {# Add conditional rendering: Only show if center_letter exists #}
-                        {% if center_letter %}
-                        <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
-                            {# Conditionally render content based on center_letter #}
-                            <circle class="hive-cell center" r="{{ center_radius }}" data-letter="{{ center_letter.lower() }}"></circle> {# Add data-letter here? Or rely on JS? JS seems better #}
-                            <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
+                        {# --- Center Group Container (Always Render) --- #}
+                        {# Use default transform if no game data #}
+                        <g id="center-group" class="hive-cell-group center-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
+                            {# Conditionally render center content #}
+                            {% if center_letter and center_radius %}
+                                <circle class="hive-cell center" r="{{ center_radius }}"></circle>
+                                <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
+                            {% endif %}
                         </g>
-                        {% endif %}
 
-                        {# --- Outer Segments and Letters --- #}
-                        {# Use viewBox center passed from backend for transform #}
-                        {# Add conditional rendering: Only show if outer_segments_data exists and is not empty #}
-                        {% if outer_segments_data %}
-                        <g class="outer-segments-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
-                            {# Add an inner group specifically for the spinning animation #}
-                            <g class="spinning-part">
-                                {# Loop through the data calculated in Python #}
-                                {% for segment_data in outer_segments_data %}
-                                    {# Add conditional rendering: Only process if segment_data.letter exists #}
-                                    {% if segment_data.letter %}
-                                    <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}">
-                                        <path class="hive-segment-path"
-                                              d="{{ segment_data.segment_path }}"
-                                              fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
-                                        <text class="hive-letter outer-letter"
-                                              id="outer-letter-{{ loop.index0 }}"
-                                              x="{{ segment_data.x }}"
-                                              y="{{ segment_data.y }}"
-                                              text-anchor="middle"
-                                              dominant-baseline="middle">
-                                            {{ segment_data.letter }}
-                                        </text>
-                                    </g>
-                                    {% endif %}
-                                {% endfor %}
-                            </g> {# End of spinning-part group #}
-                        </g>
-                        {% endif %}
+                        {# --- Outer Segments Container (Always Render) --- #}
+                        {# Use default transform if no game data #}
+                        <g id="outer-segments-group" class="outer-segments-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
+                            {# --- Spinning Part Container (Always Render) --- #}
+                            <g id="spinning-part" class="spinning-part">
+                                {# Conditionally render outer segments content #}
+                                {% if outer_segments_data %}
+                                    {% for segment_data in outer_segments_data %}
+                                        {% if segment_data.letter and segment_data.segment_path and segment_data.x is defined and segment_data.y is defined %}
+                                            <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}">
+                                                <path class="hive-segment-path"
+                                                      d="{{ segment_data.segment_path }}"
+                                                      fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
+                                                <text class="hive-letter outer-letter"
+                                                      id="outer-letter-{{ loop.index0 }}" {# Keep ID for shuffle logic #}
+                                                      x="{{ segment_data.x }}"
+                                                      y="{{ segment_data.y }}"
+                                                      text-anchor="middle"
+                                                      dominant-baseline="middle">
+                                                    {{ segment_data.letter.upper() }} {# Display uppercase #}
+                                                </text>
+                                            </g>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </g> {# End spinning-part #}
+                        </g> {# End outer-segments-group #}
                     </svg>
                 </div>
 

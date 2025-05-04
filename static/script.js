@@ -1,47 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Get DOM Elements (Combined from both blocks) ---
+    // --- Get DOM Elements (Using IDs for robustness) ---
     const submitButton = document.getElementById('submit-guess');
     const messageArea = document.getElementById('message-area');
     const scoreDisplay = document.getElementById('score');
     const rankDisplay = document.getElementById('rank');
-    // Found Words Modal Elements (Original)
-    const foundWordsList = document.getElementById('found-words-list'); // Still needed? Check usage
+    const foundWordsList = document.getElementById('found-words-list');
     const foundWordsCountSpan = document.getElementById('found-words-count');
     const showFoundWordsButton = document.getElementById('show-found-words-button');
     const foundWordsModal = document.getElementById('found-words-modal');
-    const modalFoundWordsList = document.getElementById('modal-found-words-list'); // Inside found words modal
-    const modalCloseButton = foundWordsModal?.querySelector('.modal-close-button'); // Found words modal close
-    // Game Info Elements (Original)
+    const modalFoundWordsList = document.getElementById('modal-found-words-list');
+    const modalCloseButton = foundWordsModal?.querySelector('.modal-close-button');
     const totalWordsDisplay = document.getElementById('total-words');
     const wordsRemainingDisplay = document.getElementById('words-remaining');
-    // Hive Elements (Original & New)
-    const hiveCellGroups = document.querySelectorAll('.hive-cell-group'); // General selector, may need refinement
     const currentGuessDisplay = document.getElementById('current-guess-display');
     const deleteButton = document.getElementById('delete-char');
     const shuffleButton = document.getElementById('shuffle-letters');
-    const hiveSvg = document.getElementById('hive-svg'); // Used by New
-    const outerSegmentsGroup = hiveSvg?.querySelector('.outer-segments-group'); // Parent group for positioning
-    const spinningPart = outerSegmentsGroup?.querySelector('.spinning-part'); // The actual element to animate
-    const centerGroup = hiveSvg?.querySelector('.center-group'); // Used by Original & New
-    // Ticker (Original)
+    const hiveSvg = document.getElementById('hive-svg'); // Main SVG container
+    const centerGroup = document.getElementById('center-group'); // Use ID
+    const outerSegmentsGroup = document.getElementById('outer-segments-group'); // Use ID
+    const spinningPart = document.getElementById('spinning-part'); // Use ID
+    const dictStatsListContainer = document.getElementById('dict-stats-list'); // Use ID
     const recentWordsTicker = document.getElementById('recent-words-ticker');
-    // Settings Modal Elements (Original)
-    // const settingsButton = document.getElementById('settings-button'); // REMOVED
-    // const settingsModal = document.getElementById('settings-modal'); // REMOVED
-    // const settingsCloseButton = settingsModal?.querySelector('.settings-close-button'); // REMOVED
-    // Dictionary Modal Elements (New)
-    const newGameBtn = document.getElementById('new-game-button'); // Renamed for clarity, was newGameButton
-    const dictionaryModal = document.getElementById('dictionary-modal'); // New modal element
-    const dictionaryModalCloseBtn = document.getElementById('dictionary-modal-close-btn'); // New close button
-    const dictionaryConfirmBtn = document.getElementById('confirm-start-game-btn'); // New confirm button
-    const dictOptionsContainer = document.getElementById('dictionary-options-container'); // Checkbox container
-    const dictLoadingDiv = document.getElementById('dictionary-options-loading'); // Loading indicator
-    const dictErrorDiv = document.getElementById('dictionary-options-error'); // Error display
-    // Ranks Modal Elements (New)
+    const newGameBtn = document.getElementById('new-game-button');
+    const dictionaryModal = document.getElementById('dictionary-modal');
+    const dictionaryModalCloseBtn = document.getElementById('dictionary-modal-close-btn');
+    const dictionaryConfirmBtn = document.getElementById('confirm-start-game-btn');
+    const dictOptionsContainer = document.getElementById('dictionary-options-container');
+    const dictLoadingDiv = document.getElementById('dictionary-options-loading');
+    const dictErrorDiv = document.getElementById('dictionary-options-error');
     const rankClickableArea = document.getElementById('rank-clickable-area');
     const ranksModal = document.getElementById('ranks-modal');
     const ranksModalCloseBtn = ranksModal?.querySelector('.modal-close-button');
     const ranksList = document.getElementById('ranks-list');
+    
+    // --- Log selected elements for verification ---
+    // Log only a few key ones to avoid overly verbose logs
+    console.log("Selected container elements:", { hiveSvg, centerGroup, outerSegmentsGroup, spinningPart, dictStatsListContainer });
 
     // --- Constants & State (Combined) ---
     const MAX_TICKER_WORDS = 7;
@@ -98,10 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // < ----------------------------------------
     
     // --- Check for SVG elements --- > // Moved check later
-    if (!outerSegmentsGroup || !centerGroup || !spinningPart) {
-        console.error("SVG elements for hive display not found. Display/Animation may fail.");
-        // return; // Decide if this is critical enough to stop everything
+    // This check was around line 102 in previous versions
+    /*
+    if (!outerSegmentsGroup || !centerGroup || !spinningPart) { 
+        // This check might be unnecessary now that containers always exist
+        console.warn("Initial check: SVG container elements might not be fully ready, but proceeding.");
     }
+    */
     // < ---------------------------
     
     // --- Check for Found Words modal elements --- > // Moved check later
@@ -448,91 +445,160 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- REFACTORED Animation Logic --- 
     function prepareAndRunAnimation(outerLetters, centerLetter) {
-        if (!outerSegmentsGroup || !centerGroup || !spinningPart || !Array.isArray(outerLetters) || outerLetters.length !== 6 || !centerLetter) {
-            console.error("Cannot run animation: Missing elements or invalid letter data.", { outerLetters, centerLetter });
-            if (messageArea) messageArea.textContent = "Error updating display.";
+        // Select target containers by ID
+        const targetCenterGroup = document.getElementById('center-group');
+        const targetSpinningPart = document.getElementById('spinning-part'); // Outer letters go inside here
+        const targetHiveSvg = document.getElementById('hive-svg'); // Needed for geometry calc
+
+        // Validate elements and data needed for dynamic creation
+        if (!targetCenterGroup || !targetSpinningPart || !targetHiveSvg || !Array.isArray(outerLetters) || outerLetters.length !== 6 || !centerLetter) {
+            console.error("Cannot run animation: Missing target elements or invalid letter data.", 
+                          {targetCenterGroup, targetSpinningPart, targetHiveSvg, outerLetters, centerLetter});
+            if (messageArea) {
+                 messageArea.textContent = "Error updating display.";
+                 messageArea.className = 'message-error';
+            }
             return;
         }
+        
+        // --- Geometry Calculation (Needs to match backend logic) --- 
+        function getSegmentGeometry(index, numSegments) {
+            const viewBoxWidth = 150; // Assuming viewBox ~0 0 150 150 based on template
+            const viewBoxHeight = 150;
+            const viewBox_center_x = viewBoxWidth / 2;
+            const viewBox_center_y = viewBoxHeight / 2;
+            const center_radius = 25;
+            const outer_ring_end_radius = 65;
+            const letter_radius = center_radius + (outer_ring_end_radius - center_radius) / 2;
+            const segment_angle_deg = 360 / numSegments;
+            const segment_angle_rad = (Math.PI / 180) * segment_angle_deg;
+            const start_angle_offset_rad = (Math.PI / 180) * (-90 - (segment_angle_deg / 2)); // Align first segment top
+            
+            const current_angle_rad = start_angle_offset_rad + index * segment_angle_rad;
+            const next_angle_rad = current_angle_rad + segment_angle_rad;
+            const letter_angle_rad = current_angle_rad + (segment_angle_rad / 2);
+
+            const letter_x = letter_radius * Math.cos(letter_angle_rad);
+            const letter_y = letter_radius * Math.sin(letter_angle_rad);
+            
+            const start_cx = center_radius * Math.cos(current_angle_rad);
+            const start_cy = center_radius * Math.sin(current_angle_rad);
+            const start_ox = outer_ring_end_radius * Math.cos(current_angle_rad);
+            const start_oy = outer_ring_end_radius * Math.sin(current_angle_rad);
+            const end_ox = outer_ring_end_radius * Math.cos(next_angle_rad);
+            const end_oy = outer_ring_end_radius * Math.sin(next_angle_rad);
+            const end_cx = center_radius * Math.cos(next_angle_rad);
+            const end_cy = center_radius * Math.sin(next_angle_rad);
+            const large_arc_flag = 0;
+            const sweep_flag_outer = 1;
+            const sweep_flag_inner = 0;
+            const fmt = (num) => num.toFixed(2);
+            
+            // Path 'd' attribute string - IMPORTANT: Must match Python calculation exactly
+            const path_d = `M ${fmt(start_cx)} ${fmt(start_cy)} L ${fmt(start_ox)} ${fmt(start_oy)} A ${fmt(outer_ring_end_radius)} ${fmt(outer_ring_end_radius)} 0 ${large_arc_flag} ${sweep_flag_outer} ${fmt(end_ox)} ${fmt(end_oy)} L ${fmt(end_cx)} ${fmt(end_cy)} A ${fmt(center_radius)} ${fmt(center_radius)} 0 ${large_arc_flag} ${sweep_flag_inner} ${fmt(start_cx)} ${fmt(start_cy)} Z`;
+
+            return { x: fmt(letter_x), y: fmt(letter_y), segment_path: path_d };
+        }
+        // --- End Geometry Calculation ---
+
         console.log("Starting animation with:", outerLetters, centerLetter);
 
-        // 1. Clear Letters & UI, Apply 'hidden'
-        const allLetterTexts = hiveSvg.querySelectorAll('.hive-letter');
-        allLetterTexts.forEach(el => {
-            el.textContent = '';
-            el.classList.add('hidden');
-        });
-        if (scoreDisplay) scoreDisplay.textContent = '0';
-        if (rankDisplay) rankDisplay.textContent = KIWI_RANKS_JS ? KIWI_RANKS_JS[0.00] : 'Egg'; // Use JS ranks const
-        if (messageArea) messageArea.textContent = '';
-        if (currentGuessDisplay) currentGuessDisplay.innerHTML = '<span>&nbsp;</span>'; // Reset guess display
-        currentGuess = ''; // Reset internal guess state
-        // Reset found words modal list and counts
-        if (modalFoundWordsList) modalFoundWordsList.innerHTML = '';
-        if (foundWordsCountSpan) foundWordsCountSpan.textContent = '0';
-        const modalCountSpan = document.getElementById('modal-found-words-count');
-        if(modalCountSpan) modalCountSpan.textContent = '0';
+        // 1. Clear previous content from containers
+        targetCenterGroup.innerHTML = ''; 
+        targetSpinningPart.innerHTML = ''; 
+        targetCenterGroup.removeAttribute("data-letter"); // Clear old data-letter
+        
+        // Reset other UI elements if needed (score/rank are handled by updateUIForNewGame)
+        if (currentGuessDisplay) currentGuessDisplay.innerHTML = '<span>&nbsp;</span>';
+        currentGuess = '';
 
-        // Reset dictionary counts at the bottom
-        const dictStatItems = document.querySelectorAll('.dict-stat-item'); 
-        dictStatItems.forEach(item => {
-            const listKey = item.getAttribute('data-list-key');
-            if (!listKey) return; 
+        // 2. Trigger Spin Animation
+        targetSpinningPart.classList.add('spinning');
 
-            const foundCountEl = item.querySelector(`#found-count-${listKey}`);
-            const totalCountEl = item.querySelector('.dict-total-count');
-
-            if (foundCountEl) {
-                foundCountEl.textContent = '0';
-            }
-
-            // Note: totalCountEl is populated by Jinja on load and should not be reset here.
-        });
-
-        // Reset recent words ticker
-        if (recentWordsTicker) recentWordsTicker.innerHTML = '<span class="ticker-placeholder">&nbsp;</span>';
-
-        // 2. Trigger Spin
-        spinningPart.classList.add('spinning');
-
-        // 3. Set timeout
-        const spinDuration = 3000; // Match increased CSS animation duration (3s)
+        // 3. Set timeout for post-animation population
+        const spinDuration = 3000; 
         setTimeout(() => {
-            spinningPart.classList.remove('spinning'); // Stop spin
+            targetSpinningPart.classList.remove('spinning'); // Stop visual spin
 
-            // 4. Populate Outer Letters
+            // 4. Populate Outer Letters Dynamically
             let revealDelay = 200;
+            const numSegments = outerLetters.length;
+            const white_color = '#ffffff'; // Define colors locally or get from CSS vars
+            const pale_yellow = '#fffacd';
+            
             outerLetters.forEach((letter, index) => {
                 setTimeout(() => {
-                    const textElement = hiveSvg.querySelector(`#outer-letter-${index}`);
-                    const parentGroup = textElement?.closest('.outer-segment-group');
-                    if (textElement && parentGroup) {
-                        textElement.textContent = letter.toUpperCase();
-                        parentGroup.setAttribute('data-letter', letter.toLowerCase());
-                        textElement.classList.remove('hidden');
-                    } else {
-                        console.warn(`Could not find text element/group for outer-letter-${index}`);
-                    }
+                    const geometry = getSegmentGeometry(index, numSegments);
+                    const svgNS = "http://www.w3.org/2000/svg";
+                    
+                    const outerGroup = document.createElementNS(svgNS, "g");
+                    outerGroup.classList.add("hive-cell-group", "outer-segment-group");
+                    outerGroup.setAttribute("data-letter", letter.toLowerCase());
+
+                    const path = document.createElementNS(svgNS, "path");
+                    path.classList.add("hive-segment-path");
+                    path.setAttribute("d", geometry.segment_path); 
+                    // Apply fill using JS - CSS :nth-child won't work reliably on dynamic elements
+                    path.setAttribute("fill", index % 2 === 0 ? white_color : pale_yellow); 
+
+                    const textElement = document.createElementNS(svgNS, "text");
+                    textElement.classList.add("hive-letter", "outer-letter");
+                    textElement.setAttribute("id", `outer-letter-${index}`);
+                    textElement.setAttribute("x", geometry.x);
+                    textElement.setAttribute("y", geometry.y);
+                    textElement.setAttribute("text-anchor", "middle");
+                    textElement.setAttribute("dominant-baseline", "middle");
+                    textElement.textContent = letter.toUpperCase();
+                    textElement.classList.add('hidden'); // Add hidden initially
+
+                    outerGroup.appendChild(path);
+                    outerGroup.appendChild(textElement);
+                    targetSpinningPart.appendChild(outerGroup);
+                    
+                    // Trigger reveal transition (force reflow)
+                    requestAnimationFrame(() => { 
+                        requestAnimationFrame(() => { textElement.classList.remove('hidden'); }); 
+                    });
+
                 }, index * revealDelay);
             });
 
-            // 5. Populate Center Letter
-            const centerTextElement = centerGroup.querySelector('.center-letter');
-            const centerParentGroup = centerGroup;
+            // 5. Populate Center Letter Dynamically
             const centerRevealDelay = outerLetters.length * revealDelay + 100;
             setTimeout(() => {
-                 if (centerTextElement && centerParentGroup) {
-                     centerTextElement.textContent = centerLetter.toUpperCase();
-                     centerParentGroup.setAttribute('data-letter', centerLetter.toLowerCase());
-                     centerTextElement.classList.remove('hidden');
-                 } else {
-                      console.warn(`Could not find center text element or group`);
-                 }
+                 const centerRadius = 25; // Assuming fixed radius, or get from config/backend
+                 const svgNS = "http://www.w3.org/2000/svg";
+                 
+                 const centerCircle = document.createElementNS(svgNS, "circle");
+                 centerCircle.classList.add("hive-cell", "center");
+                 centerCircle.setAttribute("r", centerRadius.toString()); 
+
+                 const centerTextElement = document.createElementNS(svgNS, "text");
+                 centerTextElement.classList.add("hive-letter", "center-letter");
+                 centerTextElement.setAttribute("x", "0");
+                 centerTextElement.setAttribute("y", "0");
+                 centerTextElement.setAttribute("text-anchor", "middle");
+                 centerTextElement.setAttribute("dominant-baseline", "middle");
+                 centerTextElement.setAttribute("dy", "0.1em");
+                 centerTextElement.textContent = centerLetter.toUpperCase();
+                 centerTextElement.classList.add('hidden'); // Add hidden initially
+
+                 targetCenterGroup.appendChild(centerCircle);
+                 targetCenterGroup.appendChild(centerTextElement);
+                 targetCenterGroup.setAttribute("data-letter", centerLetter.toLowerCase());
+                 
+                 // Trigger reveal transition (force reflow)
+                 requestAnimationFrame(() => { 
+                     requestAnimationFrame(() => { centerTextElement.classList.remove('hidden'); });
+                 });
+
             }, centerRevealDelay);
 
         }, spinDuration);
     }
-
+    // --- End Refactored Animation Logic ---
 
     // --- Event Listeners (Original - Adapted where needed) ---
 
