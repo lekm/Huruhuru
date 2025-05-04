@@ -67,8 +67,8 @@ h1 {
 .panel-header {
     display: flex;
     justify-content: center; /* Center buttons container */
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    margin-bottom: 10px; /* Reduced from 15px */
+    padding-bottom: 8px; /* Reduced from 10px */
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
 }
@@ -190,9 +190,9 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px; /* Reduced space between the two panels */
+    gap: 4px; /* Reduced from 5px */
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px; /* Reduced from 20px */
     flex-shrink: 0;
 }
 
@@ -203,7 +203,7 @@ h1 {
     align-items: baseline; /* Align text baseline */
     width: 90%;
     max-width: 350px;
-    padding: 10px 0;
+    padding: 8px 0; /* Reduced from 10px 0 */
     border-bottom: 1px solid var(--color-border);
 }
 
@@ -236,14 +236,14 @@ h1 {
     font-weight: 600;
     color: var(--color-text-dark); /* Less muted */
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 6px; /* Reduced from 8px */
     letter-spacing: 0.5px;
 }
 
 .dict-stats-list {
     display: flex;
     flex-direction: column;
-    gap: 6px; /* Space between dictionary items */
+    gap: 4px; /* Reduced from 6px */
 }
 
 .dict-stat-item {
@@ -306,13 +306,13 @@ h1 {
 .hive-container {
     max-width: 300px; /* Keep a max pixel size */
     width: 75%; /* Relative width */
-    margin: 30px auto 60px auto; /* Keep 30px top, increase bottom to 60px */
+    margin: 20px auto 30px auto; /* Reduced from 30px auto 60px auto */
     flex-shrink: 0;
 }
 
 #message-area {
     min-height: 1.5em;
-    margin-bottom: 2vh; /* vh spacing */
+    margin-bottom: 1.5vh; /* Reduced from 2vh */
     font-weight: bold;
     text-align: center;
     flex-shrink: 0;
@@ -322,7 +322,7 @@ h1 {
     min-height: 30px;
     font-size: 1.8em;
     font-weight: 600;
-    margin: 0 auto 2vh auto; /* vh spacing */
+    margin: 0 auto 1.5vh auto; /* Reduced from 2vh */
     padding-bottom: 8px;
     text-align: center;
     width: 90%;
@@ -334,12 +334,12 @@ h1 {
 }
 
 .controls {
-    margin-bottom: 3vh; /* vh spacing */
+    margin-bottom: 2vh; /* Reduced from 3vh */
     display: flex;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px; /* Reduced from 10px */
     flex-shrink: 0;
 }
 
@@ -351,7 +351,7 @@ h1 {
     /* flex-grow: 0; */ /* No longer growing */
     min-height: auto;
     overflow: visible;
-    margin-bottom: 15px; /* Space before actions */
+    margin-bottom: 10px; /* Reduced from 15px */
     padding: 0;
     border: none;
     box-shadow: none;
@@ -421,7 +421,7 @@ h1 {
 
 .game-actions {
     margin-top: auto; /* Push to bottom */
-    padding-top: 15px; /* Space above button */
+    padding-top: 10px; /* Reduced from 15px */
     margin-bottom: 0;
     text-align: center;
     flex-shrink: 0;
@@ -730,7 +730,7 @@ h1 {
     line-height: 1.5em;
     overflow: hidden;
     white-space: nowrap;
-    margin-bottom: 10px;
+    margin-bottom: 8px; /* Reduced from 10px */
     border-radius: 4px;
     padding: 0 10px;
     color: var(--color-text-dark);
