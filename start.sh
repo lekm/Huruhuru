@@ -9,11 +9,6 @@
 echo "Ensuring dependencies are installed..."
 pip3 install -r requirements.txt
 
-if [ $? -ne 0 ]; then
-    echo "Error installing dependencies. Please check pip3 and requirements.txt."
-    exit 1
-fi
-
 # Define the port
 PORT=5001
 
@@ -38,7 +33,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 # Run the Flask application (ensure app.py uses the same PORT)
-python3 app.py
+PYTHONPATH=".:$PYTHONPATH" python3 api/index.py
 
 # Deactivate virtual environment (if applicable)
 # deactivate 

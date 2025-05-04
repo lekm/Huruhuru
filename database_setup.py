@@ -1,35 +1,39 @@
 # database_setup.py
 import os
 import sys
-import sqlite3 # Standard import should now work due to injection
+import sqlite3
+import csv
+import re
 
-WORD_LIST_FILES = {
-    'common': 'words_common.txt',
-    'nz': 'words_nz_only.txt',
-    'au': 'words_au_only.txt',
-    'tr': 'words_maori_only.txt'
-}
 MIN_WORD_LENGTH_SETUP = 4 # Use a distinct constant name during setup
+# Regex for validating English letters only during setup
+VALID_CHARS_RE_SETUP = re.compile(r'^[a-z]+$')
 
-# Define the directory where the processed word list files are expected
-# PROCESSED_WORDLIST_DIR = os.path.join('wordlists', 'processed') # Old way
+# --- NEW: Define input CSV files ---
+# IMPORTANT: Adjust CSV_WORD_COLUMN_INDEX if the word is not in the first column (index 0)
+CSV_WORD_COLUMN_INDEX = 0
+CSV_FILES = [
+    '/Users/liamclarkin/Downloads/NGSL+with+SFI+(31K).xlsx - SFI adj.csv',
+    '/Users/liamclarkin/Downloads/SUP_lemmatized.csv'
+]
+# Note: This script now only populates the 'common' list type.
+# To add 'nz', 'au', 'tr' words, you would need separate source files
+# and potentially modify this script or create a separate one to assign
+# the correct list_type during insertion.
 
 def init_db(db_path='word_database.db'): # Keep default for direct script running
-    """Initializes the SQLite database and populates it with words."""
+    """Initializes the SQLite database and populates it with words from CSV files."""
     # Determine the directory where this script *runs from* during build (project root)
     project_root = os.getcwd() 
-    # Construct the wordlist path relative to the project root
-    word_list_dir = os.path.join(project_root, 'wordlists', 'processed') 
 
     print(f"Initializing database at: {db_path}")
     print(f"Executing from CWD: {project_root}") # Log CWD for confirmation
-    print(f"Looking for processed word lists in: {word_list_dir}") # Log the correct path
-    
+
     conn = None
     try:
         # Ensure the directory for the database exists (e.g., api/)
         db_dir = os.path.dirname(db_path)
-        if db_dir: # Create DB directory if db_path includes one
+        if db_dir and not os.path.exists(db_dir): # Create DB directory if db_path includes one and it doesn't exist
              os.makedirs(db_dir, exist_ok=True)
              print(f"Ensured directory exists: {db_dir}")
         
@@ -53,36 +57,60 @@ def init_db(db_path='word_database.db'): # Keep default for direct script runnin
         conn.commit()
         print("Indexes created or already exist.")
 
-        # Populate table
+        # --- NEW: Clear existing data ---
+        print("Clearing existing word data from 'words' table...")
+        cursor.execute("DELETE FROM words;")
+        conn.commit()
+        print("Existing data cleared.")
+
+        # --- NEW: Populate table from CSV files ---
+        total_words_processed = 0
         total_words_added = 0
-        for list_type, filename in WORD_LIST_FILES.items():
-            # Use the calculated absolute path to word lists
-            filepath = os.path.join(word_list_dir, filename)
+        list_type = 'common' # Assign all words from these sources as 'common'
+
+        for filepath in CSV_FILES:
+            print(f"Processing {filepath}...")
             words_in_file = 0
             words_added_from_file = 0
             try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        word = line.strip().lower()
-                        if len(word) >= MIN_WORD_LENGTH_SETUP:
-                            words_in_file += 1
-                            try:
+                # Attempt to read with utf-8, ignoring errors initially
+                # Consider adding 'errors='replace'' or more robust handling if needed
+                with open(filepath, 'r', encoding='utf-8', errors='ignore') as csvfile:
+                    reader = csv.reader(csvfile)
+                    # Optional: Skip header row if present (check your CSVs)
+                    # next(reader, None) # Uncomment this line if CSVs have a header
+                    for row_num, row in enumerate(reader):
+                        if not row: continue # Skip empty rows
+                        try:
+                            # --- Get word from the specified column ---
+                            # ASSUMPTION: Word is in column CSV_WORD_COLUMN_INDEX (default 0)
+                            word = row[CSV_WORD_COLUMN_INDEX].strip().lower()
+
+                            # --- Validation ---
+                            if len(word) >= MIN_WORD_LENGTH_SETUP and VALID_CHARS_RE_SETUP.match(word):
+                                words_in_file += 1
+                                # --- Insertion ---
                                 # INSERT OR IGNORE avoids errors if word already exists (PK constraint)
                                 cursor.execute("INSERT OR IGNORE INTO words (word, list_type) VALUES (?, ?)", (word, list_type))
                                 if cursor.rowcount > 0: # Check if a row was actually inserted
-                                     words_added_from_file += 1
-                            except sqlite3.Error as e:
-                                print(f"Error inserting word '{word}' from {filename}: {e}")
-                conn.commit() # Commit after each file
-                print(f"Processed '{filename}' ({list_type}): Found {words_in_file} words (>= {MIN_WORD_LENGTH_SETUP} letters), Added {words_added_from_file} new words.")
+                                    words_added_from_file += 1
+                        except IndexError:
+                            print(f"Warning: Row {row_num+1} in {filepath} shorter than expected (column index {CSV_WORD_COLUMN_INDEX}). Skipping row: {row}", file=sys.stderr)
+                        except Exception as e:
+                             print(f"Warning: Error processing row {row_num+1} in {filepath}. Skipping row. Error: {e} Row: {row}", file=sys.stderr)
+
+                conn.commit() # Commit after processing each file
+                print(f"  -> Processed {words_in_file} valid words, Added {words_added_from_file} new unique words as '{list_type}'.")
+                total_words_processed += words_in_file
                 total_words_added += words_added_from_file
             except FileNotFoundError:
-                print(f"Warning: Word list file not found at '{filepath}'. Skipping.")
+                print(f"Error: Input CSV file not found at '{filepath}'. Skipping.", file=sys.stderr)
             except Exception as e:
-                print(f"Error reading file {filepath}: {e}")
+                print(f"Error reading or processing file {filepath}: {e}", file=sys.stderr)
 
-
-        print(f"\nDatabase initialization complete. Total new words added: {total_words_added}")
+        print(f"\nDatabase population complete.")
+        print(f"Total valid words processed across all files: {total_words_processed:,}")
+        print(f"Total unique words added to the database: {total_words_added:,}")
 
     except sqlite3.Error as e:
         print(f"Database error: {e}")

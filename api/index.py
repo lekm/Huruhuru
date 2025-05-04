@@ -25,7 +25,7 @@ basedir = os.path.dirname(api_dir) # Project root
 # DATABASE = os.path.join(basedir, 'word_database.db') # Original incorrect path used at runtime
 # DATABASE_RUNTIME_PATH = "/var/task/word_database.db" # Absolute path in Vercel runtime
 # Let's try constructing the path relative to the runtime script location first
-DATABASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'word_database.db'))
+DATABASE_PATH = os.path.join(basedir, 'word_database.db') # Use project root
 
 # --- Flask App Definition (Should happen AFTER DB check/init) ---
 print(f"--- [RUNTIME] api/index.py START (PID: {os.getpid()}) ---")
