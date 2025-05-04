@@ -41,71 +41,42 @@
                 <svg id="hive-svg" viewBox="-2 -2 154 154">
                     {# --- SVG Definitions --- #}
                     <defs>
-                        {# Define pale yellow color variable (example) #}
+                        {# Define colors - these could also come from backend if needed #}
                         {% set pale_yellow = '#fffacd' %}
                         {% set white_color = '#ffffff' %}
                     </defs>
 
-                    {# --- Parameters --- #}
-                    {% set center_pos = (75, 75) %}
-                    {% set center_radius = 25 %}
-                    {% set outer_ring_start_radius = center_radius + 5 %} {# Gap between center and outer #}
-                    {% set outer_ring_end_radius = 65 %} {# Outer edge of segments #}
-                    {% set letter_radius = (outer_ring_start_radius + outer_ring_end_radius) / 2 %} {# Radius for letter placement #}
-                    {% set num_segments = outer_letters|length %}
-                    {% set segment_angle_deg = 360 / num_segments %}
-                    {% set segment_angle_rad = segment_angle_deg * (3.14159265 / 180) %}
-                    {% set start_angle_offset_deg = -90 - (segment_angle_deg / 2) %} {# Start top-center of first segment #}
+                    {# --- Parameters (now mostly coming from backend) --- #}
+                    {# Removed Jinja calculations for angles, radii, points #}
 
                     {# --- Center Circle --- #}
-                    <g class="hive-cell-group center-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})" data-letter="{{ center_letter }}">
+                    {# Use viewBox center passed from backend for transform #}
+                    <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
+                        {# Use center_radius passed from backend #}
                         <circle class="hive-cell center" r="{{ center_radius }}"></circle>
                         <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle">{{ center_letter.upper() }}</text>
                     </g>
 
                     {# --- Outer Segments and Letters --- #}
-                    <g class="outer-segments-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})">
-                        {% for i in range(num_segments) %}
-                            {% set letter = outer_letters[i] %}
-                            {% set current_angle_deg = start_angle_offset_deg + i * segment_angle_deg %}
-                            {% set current_angle_rad = current_angle_deg * (3.14159265 / 180) %}
-                            {% set next_angle_rad = (current_angle_deg + segment_angle_deg) * (3.14159265 / 180) %}
-
-                            {# Calculate path points for the segment arc #}
-                            {% set start_x1 = outer_ring_start_radius * cos(current_angle_rad) %}
-                            {% set start_y1 = outer_ring_start_radius * sin(current_angle_rad) %}
-                            {% set end_x1 = outer_ring_end_radius * cos(current_angle_rad) %}
-                            {% set end_y1 = outer_ring_end_radius * sin(current_angle_rad) %}
-                            {% set start_x2 = outer_ring_end_radius * cos(next_angle_rad) %}
-                            {% set start_y2 = outer_ring_end_radius * sin(next_angle_rad) %}
-                            {% set end_x2 = outer_ring_start_radius * cos(next_angle_rad) %}
-                            {% set end_y2 = outer_ring_start_radius * sin(next_angle_rad) %}
-
-                            {# Large arc flag (0 since segment angle is <= 180) #}
-                            {% set large_arc_flag = 0 %}
-
-                            {# Sweep flag (1 for clockwise) #}
-                            {% set sweep_flag_outer = 1 %}
-                            {% set sweep_flag_inner = 0 %}
-
-                            {# Path data string for the segment #}
-                            {% set path_d = "M {} {} L {} {} A {} {} 0 {} {} {} {} L {} {} A {} {} 0 {} {} {} {} Z".format(
-                                start_x1, start_y1, end_x1, end_y1,
-                                outer_ring_end_radius, outer_ring_end_radius, large_arc_flag, sweep_flag_outer, start_x2, start_y2,
-                                end_x2, end_y2,
-                                outer_ring_start_radius, outer_ring_start_radius, large_arc_flag, sweep_flag_inner, start_x1, start_y1
-                            ) %}
-
-                            {# Calculate position for the letter in the middle of the segment #}
-                            {% set letter_angle_rad = (current_angle_rad + next_angle_rad) / 2 %}
-                            {% set letter_x = letter_radius * cos(letter_angle_rad) %}
-                            {% set letter_y = letter_radius * sin(letter_angle_rad) %}
-
+                    {# Use viewBox center passed from backend for transform #}
+                    <g class="outer-segments-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})">
+                        {# Loop through the data calculated in Python #}
+                        {% for segment_data in outer_segments_data %}
                             {# Segment group for styling and interaction #}
-                            <g class="hive-cell-group outer-segment-group" data-letter="{{ letter }}">
-                                <path class="hive-segment-path" d="{{ path_d }}" />
-                                <text class="hive-letter outer-letter" x="{{ letter_x }}" y="{{ letter_y }}" text-anchor="middle" dominant-baseline="middle">
-                                    {{ letter.upper() }}
+                            {# Use letter from segment_data #}
+                            <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}"> {# Use lowercase letter for consistency if needed by JS #}
+                                {# Use pre-calculated path from segment_data #}
+                                {# Apply alternating fill color based on loop index #}
+                                <path class="hive-segment-path"
+                                      d="{{ segment_data.segment_path }}"
+                                      fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
+                                {# Use pre-calculated position from segment_data #}
+                                <text class="hive-letter outer-letter"
+                                      x="{{ segment_data.x }}"
+                                      y="{{ segment_data.y }}"
+                                      text-anchor="middle"
+                                      dominant-baseline="middle">
+                                    {{ segment_data.letter }} {# Already uppercase from backend #}
                                 </text>
                             </g>
                         {% endfor %}

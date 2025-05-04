@@ -170,45 +170,101 @@ def index():
     print(f"Active list types from session: {active_list_types}")
 
     # Check if game state exists in session
-    if 'letters' not in session or 'center_letter' not in session or 'solutions' not in session:
-        print("No letters found in session, starting new game setup...")
-        # Start new game if no state found
-        letters, center_letter, solutions, normalized_solution_map, total_score = setup_new_game(DATABASE_PATH, active_list_types)
-        session['letters'] = list(letters) # Store as list
-        session['center_letter'] = center_letter
-        session['solutions'] = list(solutions) # Store as list for JSON serialization
-        session['normalized_solution_map'] = normalized_solution_map # Store the map
-        session['found_words'] = []
-        session['score'] = 0
-        session['total_score'] = total_score
-        print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(solutions)}, Map Size: {len(normalized_solution_map)}, Total Score: {total_score}")
+    if ('letters' not in session or 'center_letter' not in session or
+            'solutions' not in session or 'total_score' not in session): # Added total_score check
+        print("No full game state found in session, starting new game setup...")
+        try:
+            letters, center_letter, solutions, normalized_solution_map, total_score = setup_new_game(DATABASE_PATH, active_list_types)
+            session['letters'] = list(letters) # Store as list
+            session['center_letter'] = center_letter
+            session['solutions'] = list(solutions) # Store as list for JSON serialization
+            session['normalized_solution_map'] = normalized_solution_map # Store the map
+            session['found_words'] = []
+            session['score'] = 0
+            session['total_score'] = total_score
+            print(f"New game started. Letters: {session['letters']}, Center: {center_letter}, Solutions: {len(solutions)}, Map Size: {len(normalized_solution_map)}, Total Score: {total_score}")
+        except (RuntimeError, ConnectionError) as e:
+            print(f"!!! Error during new game setup in / route: {e}")
+            # Render an error page or return a message?
+            # For now, let's re-raise to see it clearly in logs, but might need a user-friendly page
+            # Consider flashing a message and redirecting, or rendering a specific error template
+            abort(500, description=f"Failed to set up a new game: {e}")
 
     # Retrieve game state from session
     center_letter = session['center_letter']
     all_letters = sorted(session['letters']) # Ensure consistent order for display
     outer_letters = [l for l in all_letters if l != center_letter]
     solutions = set(session['solutions']) # Convert back to set for efficient lookups later if needed
-    found_words = session['found_words']
-    score = session['score']
+    found_words = session.get('found_words', []) # Use .get for safety
+    score = session.get('score', 0) # Use .get for safety
     total_score = session.get('total_score', 0) # Get total score
 
-    # --- Calculate Outer Circle Positions --- RE-ENABLED for hexagonal layout
-    circle_radius = 25 # Keep for reference/potential use
-    center_pos_x = 75 # Must match template viewBox center
-    center_pos_y = 75
-    outer_ring_radius = 50 # Distance for positioning outer letters
-    angles = [math.pi * -0.5, math.pi * -0.1667, math.pi * 0.1667, math.pi * 0.5, math.pi * 0.8333, math.pi * 1.1667] # Approx angles: -90, -30, 30, 90, 150, 210 degrees
-    outer_positions = []
-    for i in range(len(outer_letters)): # Max 6 outer letters
-        if i < len(angles):
-            angle = angles[i]
-            pos_x = center_pos_x + outer_ring_radius * math.cos(angle)
-            pos_y = center_pos_y + outer_ring_radius * math.sin(angle)
-            outer_positions.append({'x': round(pos_x, 2), 'y': round(pos_y, 2)})
-        else: # Should not happen with 7 letters, but handle defensively
-            outer_positions.append({'x': center_pos_x, 'y': center_pos_y}) # Default to center
-    print(f"--- [DEBUG index route] Calculated outer_positions: {outer_positions}")
-    # --- Calculate Outer Circle Positions --- RE-ENABLED
+    # --- Calculate Circular Layout Data ---
+    # Parameters (should match SVG viewBox and desired look)
+    viewBox_center_x = 75
+    viewBox_center_y = 75
+    center_radius = 25
+    outer_ring_start_radius = center_radius + 5
+    outer_ring_end_radius = 65
+    letter_radius = (outer_ring_start_radius + outer_ring_end_radius) / 2
+    num_segments = len(outer_letters)
+
+    outer_segments_data = []
+
+    if num_segments > 0: # Avoid division by zero if no outer letters
+        segment_angle_deg = 360 / num_segments
+        segment_angle_rad = math.radians(segment_angle_deg)
+        # Start angle offset: -90 degrees (top) minus half a segment angle to center the first segment peak at the top
+        start_angle_offset_rad = math.radians(-90 - (segment_angle_deg / 2))
+
+        for i, letter in enumerate(outer_letters):
+            # Calculate angles for the current segment
+            current_angle_rad = start_angle_offset_rad + i * segment_angle_rad
+            next_angle_rad = current_angle_rad + segment_angle_rad
+
+            # --- Calculate Segment Path Points (relative to center 0,0) ---
+            # Inner arc start
+            start_x1 = outer_ring_start_radius * math.cos(current_angle_rad)
+            start_y1 = outer_ring_start_radius * math.sin(current_angle_rad)
+            # Outer arc start
+            end_x1 = outer_ring_end_radius * math.cos(current_angle_rad)
+            end_y1 = outer_ring_end_radius * math.sin(current_angle_rad)
+            # Outer arc end
+            start_x2 = outer_ring_end_radius * math.cos(next_angle_rad)
+            start_y2 = outer_ring_end_radius * math.sin(next_angle_rad)
+            # Inner arc end
+            end_x2 = outer_ring_start_radius * math.cos(next_angle_rad)
+            end_y2 = outer_ring_start_radius * math.sin(next_angle_rad)
+
+            # --- Calculate Letter Position (relative to center 0,0) ---
+            letter_angle_rad = current_angle_rad + (segment_angle_rad / 2) # Midpoint angle
+            letter_x = letter_radius * math.cos(letter_angle_rad)
+            letter_y = letter_radius * math.sin(letter_angle_rad)
+
+            # --- Format SVG Path 'd' attribute ---
+            large_arc_flag = 0 # Segment angle is always < 180
+            sweep_flag_outer = 1 # Clockwise for outer arc
+            sweep_flag_inner = 0 # Counter-clockwise for inner arc
+
+            # Format numbers to avoid excessive precision in HTML
+            fmt = ".2f"
+            path_d = (
+                f"M {start_x1:{fmt}} {start_y1:{fmt}} " # Move to inner arc start
+                f"L {end_x1:{fmt}} {end_y1:{fmt}} "     # Line to outer arc start
+                f"A {outer_ring_end_radius:{fmt}} {outer_ring_end_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_outer} {start_x2:{fmt}} {start_y2:{fmt}} " # Outer arc
+                f"L {end_x2:{fmt}} {end_y2:{fmt}} "     # Line to inner arc end
+                f"A {outer_ring_start_radius:{fmt}} {outer_ring_start_radius:{fmt}} 0 {large_arc_flag} {sweep_flag_inner} {start_x1:{fmt}} {start_y1:{fmt}} " # Inner arc (reverse sweep)
+                f"Z" # Close path
+            )
+
+            outer_segments_data.append({
+                'letter': letter.upper(),
+                'x': round(letter_x, 2),
+                'y': round(letter_y, 2),
+                'segment_path': path_d
+            })
+
+    # --- End Calculate Circular Layout Data ---
 
     rank = calculate_rank(score, total_score)
     message = session.pop('message', '') # Get and clear flash message
@@ -219,15 +275,16 @@ def index():
     use_tr = 'tr' in active_list_types
 
     print(f"--- [DEBUG index route] Center Letter: {center_letter}")
-    print(f"--- [DEBUG index route] Display Letters (sorted from session): {all_letters}")
     print(f"--- [DEBUG index route] Outer Letters: {outer_letters}")
+    print(f"--- [DEBUG index route] Outer Segments Data: {outer_segments_data}") # Log the calculated data
 
     # Render the main game page
     return render_template('index.html',
-                           letters=all_letters, # Pass sorted letters
+                           # letters=all_letters, # No longer needed directly? Maybe keep for shuffle? Check script.js if needed
                            center_letter=center_letter,
-                           outer_letters=outer_letters,
-                           outer_positions=outer_positions,
+                           outer_letters=outer_letters, # Keep for shuffle logic in JS if it uses this
+                           # outer_positions=outer_positions, # Remove old hexagonal positions
+                           outer_segments_data=outer_segments_data, # Pass new circular data
                            score=score,
                            rank=rank,
                            total_words=len(solutions),
@@ -235,7 +292,11 @@ def index():
                            message=message,
                            use_nz=use_nz,
                            use_au=use_au,
-                           use_tr=use_tr)
+                           use_tr=use_tr,
+                           viewBox_center_x=viewBox_center_x, # Pass center coordinates
+                           viewBox_center_y=viewBox_center_y,
+                           center_radius=center_radius # Pass center radius
+                           )
 
 @app.route('/guess', methods=['POST'])
 def handle_guess():
