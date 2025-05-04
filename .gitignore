@@ -125,4 +125,4 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Our specific ignores
-word_database.db 
+# word_database.db 
