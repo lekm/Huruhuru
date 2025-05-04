@@ -37,40 +37,79 @@
             </div>
 
             <div class="hive-container">
-                <svg id="hive-svg" viewBox="0 0 150 150"> {# Adjusted viewBox slightly #}
-                    <!-- Define circle properties - radius can be adjusted -->
-                    {% set circle_radius = 25 %}
-                    {% set center_pos = (75, 75) %} {# Center of the viewBox #}
-                    {% set outer_ring_radius = 50 %} {# Distance from center to outer circle centers #}
+                {# Adjusted viewBox for potential clipping #}
+                <svg id="hive-svg" viewBox="-2 -2 154 154">
+                    {# --- SVG Definitions --- #}
+                    <defs>
+                        {# Define pale yellow color variable (example) #}
+                        {% set pale_yellow = '#fffacd' %}
+                        {% set white_color = '#ffffff' %}
+                    </defs>
 
-                    <!-- Center Circle -->
+                    {# --- Parameters --- #}
+                    {% set center_pos = (75, 75) %}
+                    {% set center_radius = 25 %}
+                    {% set outer_ring_start_radius = center_radius + 5 %} {# Gap between center and outer #}
+                    {% set outer_ring_end_radius = 65 %} {# Outer edge of segments #}
+                    {% set letter_radius = (outer_ring_start_radius + outer_ring_end_radius) / 2 %} {# Radius for letter placement #}
+                    {% set num_segments = outer_letters|length %}
+                    {% set segment_angle_deg = 360 / num_segments %}
+                    {% set segment_angle_rad = segment_angle_deg * (3.14159265 / 180) %}
+                    {% set start_angle_offset_deg = -90 - (segment_angle_deg / 2) %} {# Start top-center of first segment #}
+
+                    {# --- Center Circle --- #}
                     <g class="hive-cell-group center-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})" data-letter="{{ center_letter }}">
-                        <circle class="hive-cell center" r="{{ circle_radius }}"></circle>
+                        <circle class="hive-cell center" r="{{ center_radius }}"></circle>
                         <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle">{{ center_letter.upper() }}</text>
                     </g>
 
-                    <!-- Visual Outer Ring -->
-                    <circle class="hive-outer-ring" cx="{{ center_pos[0] }}" cy="{{ center_pos[1] }}" r="{{ outer_ring_radius + circle_radius * 0.75 }}"></circle>
+                    {# --- Outer Segments and Letters --- #}
+                    <g class="outer-segments-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})">
+                        {% for i in range(num_segments) %}
+                            {% set letter = outer_letters[i] %}
+                            {% set current_angle_deg = start_angle_offset_deg + i * segment_angle_deg %}
+                            {% set current_angle_rad = current_angle_deg * (3.14159265 / 180) %}
+                            {% set next_angle_rad = (current_angle_deg + segment_angle_deg) * (3.14159265 / 180) %}
 
-                    <!-- Outer Letters - Arranged hexagonally using passed positions -->
-                    {# Removed horizontal row calculation #}
-                    {# 
-                    {% set outer_y_offset = 35 %} 
-                    {% set outer_start_x = center_pos[0] - (outer_letters|length - 1) * 15 / 2 %}
-                    {% set outer_letter_spacing = 15 %}
-                    #}
+                            {# Calculate path points for the segment arc #}
+                            {% set start_x1 = outer_ring_start_radius * cos(current_angle_rad) %}
+                            {% set start_y1 = outer_ring_start_radius * sin(current_angle_rad) %}
+                            {% set end_x1 = outer_ring_end_radius * cos(current_angle_rad) %}
+                            {% set end_y1 = outer_ring_end_radius * sin(current_angle_rad) %}
+                            {% set start_x2 = outer_ring_end_radius * cos(next_angle_rad) %}
+                            {% set start_y2 = outer_ring_end_radius * sin(next_angle_rad) %}
+                            {% set end_x2 = outer_ring_start_radius * cos(next_angle_rad) %}
+                            {% set end_y2 = outer_ring_start_radius * sin(next_angle_rad) %}
 
-                    {% for i in range(outer_letters|length) %}
-                        {% set letter = outer_letters[i] %}
-                        {% set pos = outer_positions[i] %} {# Use position from backend #}
-                        {# {% set pos_x = outer_start_x + i * outer_letter_spacing %} #}
-                        {# {% set pos_y = center_pos[1] + circle_radius + outer_y_offset %} #}
-                        <text class="hive-letter outer-letter-flat" x="{{ pos.x }}" y="{{ pos.y }}" text-anchor="middle" dominant-baseline="middle" data-letter="{{ letter }}">
-                            {{ letter.upper() }}
-                        </text>
-                    {% endfor %}
+                            {# Large arc flag (0 since segment angle is <= 180) #}
+                            {% set large_arc_flag = 0 %}
 
-                    {# Removed the loop for individual outer circles based on outer_positions - This was already removed #}
+                            {# Sweep flag (1 for clockwise) #}
+                            {% set sweep_flag_outer = 1 %}
+                            {% set sweep_flag_inner = 0 %}
+
+                            {# Path data string for the segment #}
+                            {% set path_d = "M {} {} L {} {} A {} {} 0 {} {} {} {} L {} {} A {} {} 0 {} {} {} {} Z".format(
+                                start_x1, start_y1, end_x1, end_y1,
+                                outer_ring_end_radius, outer_ring_end_radius, large_arc_flag, sweep_flag_outer, start_x2, start_y2,
+                                end_x2, end_y2,
+                                outer_ring_start_radius, outer_ring_start_radius, large_arc_flag, sweep_flag_inner, start_x1, start_y1
+                            ) %}
+
+                            {# Calculate position for the letter in the middle of the segment #}
+                            {% set letter_angle_rad = (current_angle_rad + next_angle_rad) / 2 %}
+                            {% set letter_x = letter_radius * cos(letter_angle_rad) %}
+                            {% set letter_y = letter_radius * sin(letter_angle_rad) %}
+
+                            {# Segment group for styling and interaction #}
+                            <g class="hive-cell-group outer-segment-group" data-letter="{{ letter }}">
+                                <path class="hive-segment-path" d="{{ path_d }}" />
+                                <text class="hive-letter outer-letter" x="{{ letter_x }}" y="{{ letter_y }}" text-anchor="middle" dominant-baseline="middle">
+                                    {{ letter.upper() }}
+                                </text>
+                            </g>
+                        {% endfor %}
+                    </g>
                 </svg>
             </div>
 

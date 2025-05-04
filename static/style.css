@@ -244,80 +244,85 @@ h1 {
 #hive-svg {
     width: 100%;
     height: 100%;
+    cursor: default; /* Default cursor for the SVG area */
 }
 
 .hive-cell-group {
+    /* Remove general cursor pointer, apply specifically */
+}
+
+/* Apply pointer cursor only to groups with letters */
+.hive-cell-group[data-letter] {
     cursor: pointer;
-    transition: transform 0.1s ease-out; /* Add transition for potential hover effect */
+    transition: transform 0.1s ease-out;
 }
 
-/* Remove hexagon definition style */
-/* #hexagon { ... } */
-
-.hive-cell {
-    /* Shared styles for center and outer circles */
-    stroke: #495057;
-    stroke-width: 1.5;
-    fill: #f8f9fa; /* Light grey fill */
-    transition: fill 0.2s ease;
+.hive-cell-group[data-letter]:active {
+    transform: scale(0.95); /* Slight shrink on click */
 }
 
+/* --- Center Cell --- */
 .hive-cell.center {
-    fill: #ffe066; /* Yellow fill for center */
+    fill: #f9a825; /* Yellow background */
+    stroke: #e69500; /* Darker yellow border */
+    stroke-width: 1;
 }
 
-.hive-outer-ring {
-    fill: none;
-    stroke: #adb5bd; /* Lighter grey stroke */
-    stroke-width: 1.5;
+/* Remove hover styles for .hive-cell directly */
+/* .hive-cell:hover { ... } */
+/* .hive-cell.center:hover { ... } */
+
+/* --- Outer Segments --- */
+.hive-segment-path {
+    stroke: #cccccc; /* Light grey border for segments */
+    stroke-width: 1px;
+    /* Default fill will be handled by alternating colors */
+    transition: filter 0.2s ease;
 }
 
-.hive-cell:hover {
-    fill: #e9ecef; /* Slightly darker grey on hover */
+/* Alternating Segment Colors */
+.outer-segment-group:nth-child(odd) .hive-segment-path {
+    fill: #ffffff; /* White */
 }
 
-.hive-cell.center:hover {
-     fill: #ffd333; /* Darker yellow on hover */
+.outer-segment-group:nth-child(even) .hive-segment-path {
+    fill: #fffacd; /* Pale Yellow (Lemon Chiffon) */
 }
 
-/* Use group hover instead */
-.hive-cell-group:hover .hive-cell.outer {
-    fill: #e9ecef;
+/* Segment Hover Effect (apply brightness filter) */
+.outer-segment-group:hover .hive-segment-path {
+    filter: brightness(0.9);
 }
 
-.hive-cell-group:hover .hive-cell.center {
-     fill: #ffd333;
-}
-
+/* --- Letters (General) --- */
 .hive-letter {
-    font-size: 1.6em; /* Adjust as needed */
-    font-weight: 700;
-    fill: #343a40;
-    text-anchor: middle; /* Center horizontally */
-    dominant-baseline: middle; /* Center vertically */
-    pointer-events: none; /* Make text non-interactive */
-    text-transform: uppercase;
-    -webkit-user-select: none; /* Prevent text selection */
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 18px; /* Adjusted base size */
+    fill: #333; /* Dark grey text */
+    pointer-events: none; /* Ignore pointer events on text itself */
+    -webkit-user-select: none; /* Disable text selection */
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
 }
 
+/* Center Letter Specifics */
 .center-letter {
-    fill: #000; /* Ensure center letter has a fill color */
-    /* No specific positioning rules here that override SVG attributes */
+    fill: #ffffff; /* White text on yellow background */
+    font-size: 20px; /* Slightly larger center letter */
 }
 
-.outer-letter-flat {
-    /* Inherits from .hive-letter */
-    fill: #333; /* Example: maybe slightly lighter */
-    cursor: pointer; /* Make text itself look clickable */
-    pointer-events: auto; /* Override none from .hive-letter to allow clicks */
+/* Outer Letter Specifics (already positioned by SVG x/y) */
+.outer-letter {
+    /* Font size/color inherited from .hive-letter is fine */
 }
 
-/* Remove old styles for outer letters */
-/* .outer-letter { ... } */
+/* Remove old outer ring style */
+/* .hive-outer-ring { ... } */
 
+/* Remove old flat outer letter style */
+/* .outer-letter-flat { ... } */
 
 /* --- Guess Display & Messages --- */
 .current-guess-display {
