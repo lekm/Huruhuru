@@ -496,9 +496,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const sweep_flag_inner = 0;
             const fmt = (num) => num.toFixed(2);
             
-            // Path 'd' attribute string - IMPORTANT: Must match Python calculation exactly
             const path_d = `M ${fmt(start_cx)} ${fmt(start_cy)} L ${fmt(start_ox)} ${fmt(start_oy)} A ${fmt(outer_ring_end_radius)} ${fmt(outer_ring_end_radius)} 0 ${large_arc_flag} ${sweep_flag_outer} ${fmt(end_ox)} ${fmt(end_oy)} L ${fmt(end_cx)} ${fmt(end_cy)} A ${fmt(center_radius)} ${fmt(center_radius)} 0 ${large_arc_flag} ${sweep_flag_inner} ${fmt(start_cx)} ${fmt(start_cy)} Z`;
 
+            // --- ADD LOGGING --- >
+            console.log(`[getSegmentGeometry ${index}] x: ${fmt(letter_x)}, y: ${fmt(letter_y)}, path d starts: ${path_d.substring(0, 20)}...`);
+            // < -------------------
+            
             return { x: fmt(letter_x), y: fmt(letter_y), segment_path: path_d };
         }
         // --- End Geometry Calculation ---
