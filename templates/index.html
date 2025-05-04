@@ -81,7 +81,12 @@
 
                         {# --- Center Group Container (Always Render) --- #}
                         {# Use default transform if no game data #}
-                        <g id="center-group" class="hive-cell-group center-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
+                        <g id="center-group" class="hive-cell-group center-group"
+                           {% if viewBox_center_x is defined and viewBox_center_x is not none and viewBox_center_y is defined and viewBox_center_y is not none %}
+                           transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})"
+                           {% else %}
+                           transform="translate(75, 75)" {# Fallback transform #}
+                           {% endif %}>
                             {# Conditionally render center content #}
                             {% if center_letter and center_radius %}
                                 <circle class="hive-cell center" r="{{ center_radius }}"></circle>
@@ -91,7 +96,12 @@
 
                         {# --- Outer Segments Container (Always Render) --- #}
                         {# Use default transform if no game data #}
-                        <g id="outer-segments-group" class="outer-segments-group" transform="translate({{ viewBox_center_x | default(75) }}, {{ viewBox_center_y | default(75) }})">
+                        <g id="outer-segments-group" class="outer-segments-group"
+                           {% if viewBox_center_x is defined and viewBox_center_x is not none and viewBox_center_y is defined and viewBox_center_y is not none %}
+                           transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})"
+                           {% else %}
+                           transform="translate(75, 75)" {# Fallback transform #}
+                           {% endif %}>
                             {# --- Spinning Part Container (Always Render) --- #}
                             <g id="spinning-part" class="spinning-part">
                                 {# Conditionally render outer segments content #}
