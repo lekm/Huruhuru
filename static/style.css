@@ -37,7 +37,7 @@ h1 {
     max-width: calc(98vh * (9 / 16));
 
     /* Fallback attempt */
-    width: auto;
+    width: 100%; /* CHANGED: Use 100% width */
     /* height: 98vh; */ /* REMOVED fixed height */
 
     /* overflow: hidden; */ /* REMOVED overflow hidden */
