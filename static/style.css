@@ -923,4 +923,96 @@ h1 {
 #ranks-list .rank-name {
     /* No specific styles needed, flex handles alignment */
     text-align: left; /* Ensure left alignment */
+}
+
+/* --- Responsive Adjustments for Mobile --- */
+@media (max-width: 480px) {
+    body {
+        /* Prevent potential double scrollbars */
+        /* overflow: hidden; */ /* Commenting out - might prevent essential page scroll if aspect wrapper is smaller than viewport */
+    }
+    
+    .game-panel {
+        /* Reduce overall padding on small screens */
+        padding: 10px;
+        /* overflow-y: auto; is already set, should allow scrolling if content overflows */
+    }
+
+    /* Reduce header spacing */
+    .panel-header {
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+    }
+    .header-buttons {
+        gap: 10px;
+    }
+    .header-button {
+        padding: 8px 12px; /* Slightly smaller buttons */
+        font-size: 0.9em;
+    }
+
+    /* Reduce game info spacing */
+    .game-info-container {
+        margin-bottom: 10px;
+        gap: 3px;
+    }
+    .score-rank-panel {
+        padding: 8px 0;
+    }
+    .info-label-inline, .info-value-inline {
+        font-size: 1.0em; /* Slightly smaller score/rank */
+    }
+    .dict-stat-item {
+        font-size: 0.85em; /* Smaller dict stats */
+        gap: 5px;
+    }
+
+    /* Reduce message/ticker spacing */
+    #message-area {
+        margin-bottom: 10px;
+    }
+    .recent-words-ticker {
+        margin-bottom: 10px;
+        font-size: 0.85em;
+    }
+
+    /* Reduce interaction area spacing */
+    .interaction-area {
+        /* Already uses flex-grow, should adapt */
+    }
+    .hive-container {
+        width: 75%; /* Keep relative width */
+        max-width: 260px; /* Reduce max size */
+        margin-top: 15px; /* Reduce top margin */
+        margin-bottom: 20px; /* Reduce bottom margin */
+    }
+    .current-guess-display {
+        font-size: 1.6em; /* Slightly smaller guess */
+        margin-bottom: 15px;
+    }
+    .controls {
+        margin-bottom: 15px; /* Reduce margin */
+        gap: 8px;
+    }
+    .controls button {
+        padding: 8px 15px; /* Slightly smaller control buttons */
+        font-size: 0.9em;
+    }
+    
+    /* Reduce modal padding */
+    .modal-content {
+        padding: 20px;
+    }
+    .modal-content h2 {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        font-size: 1.1em;
+    }
+    #modal-found-words-list li {
+        font-size: 0.95em;
+    }
+     #modal-definition-area {
+        font-size: 0.9em;
+    }
+
 } 
