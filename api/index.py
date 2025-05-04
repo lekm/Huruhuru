@@ -192,6 +192,24 @@ def index():
     score = session['score']
     total_score = session.get('total_score', 0) # Get total score
 
+    # --- Calculate Outer Circle Positions --- RE-ENABLED for hexagonal layout
+    circle_radius = 25 # Keep for reference/potential use
+    center_pos_x = 75 # Must match template viewBox center
+    center_pos_y = 75
+    outer_ring_radius = 50 # Distance for positioning outer letters
+    angles = [math.pi * -0.5, math.pi * -0.1667, math.pi * 0.1667, math.pi * 0.5, math.pi * 0.8333, math.pi * 1.1667] # Approx angles: -90, -30, 30, 90, 150, 210 degrees
+    outer_positions = []
+    for i in range(len(outer_letters)): # Max 6 outer letters
+        if i < len(angles):
+            angle = angles[i]
+            pos_x = center_pos_x + outer_ring_radius * math.cos(angle)
+            pos_y = center_pos_y + outer_ring_radius * math.sin(angle)
+            outer_positions.append({'x': round(pos_x, 2), 'y': round(pos_y, 2)})
+        else: # Should not happen with 7 letters, but handle defensively
+            outer_positions.append({'x': center_pos_x, 'y': center_pos_y}) # Default to center
+    print(f"--- [DEBUG index route] Calculated outer_positions: {outer_positions}")
+    # --- Calculate Outer Circle Positions --- RE-ENABLED
+
     rank = calculate_rank(score, total_score)
     message = session.pop('message', '') # Get and clear flash message
 
@@ -209,6 +227,7 @@ def index():
                            letters=all_letters, # Pass sorted letters
                            center_letter=center_letter,
                            outer_letters=outer_letters,
+                           outer_positions=outer_positions,
                            score=score,
                            rank=rank,
                            total_words=len(solutions),
