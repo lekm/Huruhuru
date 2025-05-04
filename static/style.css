@@ -38,9 +38,9 @@ h1 {
 
     /* Fallback attempt */
     width: auto;
-    height: 98vh;
+    /* height: 98vh; */ /* REMOVED fixed height */
 
-    overflow: hidden;
+    /* overflow: hidden; */ /* REMOVED overflow hidden */
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     position: relative;
     background-color: var(--color-pale-teal); /* Background now pale teal */
@@ -928,7 +928,7 @@ h1 {
 @media (max-width: 480px) {
     body {
         /* Prevent potential double scrollbars on mobile */
-        overflow: hidden; /* ADDED overflow hidden ONLY for mobile */
+        /* overflow: hidden; */ /* REMOVED overflow hidden from body */
     }
     
     .game-panel {
