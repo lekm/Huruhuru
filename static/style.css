@@ -24,7 +24,6 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden;
 }
 
 h1 {
@@ -928,14 +927,15 @@ h1 {
 /* --- Responsive Adjustments for Mobile --- */
 @media (max-width: 480px) {
     body {
-        /* Prevent potential double scrollbars */
-        /* overflow: hidden; */ /* Commenting out - might prevent essential page scroll if aspect wrapper is smaller than viewport */
+        /* Prevent potential double scrollbars on mobile */
+        overflow: hidden; /* ADDED overflow hidden ONLY for mobile */
     }
     
     .game-panel {
         /* Reduce overall padding on small screens */
         padding: 10px;
-        /* overflow-y: auto; is already set, should allow scrolling if content overflows */
+        /* overflow-y: auto; is already set globally, should allow scrolling */
+        /* min-height: 0; Might not be needed as height: 100% is set */
     }
 
     /* Reduce header spacing */
