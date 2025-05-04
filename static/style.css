@@ -323,7 +323,7 @@ h1 {
     min-height: 30px;
     font-size: 1.8em;
     font-weight: 600;
-    margin: 0 auto 1.5vh auto; /* Reduced from 2vh */
+    margin: 0 auto 1vh auto; /* Reduced bottom margin */
     padding-bottom: 8px;
     text-align: center;
     width: 90%;
