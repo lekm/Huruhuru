@@ -79,13 +79,15 @@ def choose_letters(db_path: str, active_list_types: list[str]):
         print("--- [choose_letters PANGRAM-FIRST] Filtering candidates for 7 unique letters and vowels...")
         for row in candidate_words:
             word = row[0]
-            unique_letters = set(word)
+            # --- Modify Pangram Check --- START
+            # Calculate normalized letters FIRST
+            original_unique_letters = set(word)
+            normalized_letters = {normalize_word(l) for l in original_unique_letters}
             
-            if len(unique_letters) == 7:
-                # Check for vowels (including macrons)
-                normalized_letters = {normalize_word(l) for l in unique_letters}
-                if any(v in normalized_letters for v in VOWELS):
-                    valid_pangram_candidates.append(word)
+            # Check if NORMALIZED set has exactly 7 letters AND includes a vowel
+            if len(normalized_letters) == 7 and any(v in normalized_letters for v in VOWELS):
+                 valid_pangram_candidates.append(word) # Add original word
+            # --- Modify Pangram Check --- END
 
         print(f"--- [choose_letters PANGRAM-FIRST] Found {len(valid_pangram_candidates)} valid pangram candidates after filtering.")
 
@@ -105,16 +107,35 @@ def choose_letters(db_path: str, active_list_types: list[str]):
             f"Check database content and list selections."
         )
 
-    # Select a random pangram from the valid candidates
-    chosen_pangram = random.choice(valid_pangram_candidates)
-    final_letters = set(chosen_pangram)
-    center_letter = random.choice(list(final_letters)) # Choose center from the actual letters
+    # --- Remove TEMPORARY HARDCODING --- 
+    # chosen_pangram = 'āhuatanga' # <<< TEMPORARY HARDCODING FOR DEBUGGING
+    # print(f"--- [DEBUG] USING HARDCODED PANGRAM: {chosen_pangram} ---") # DEBUG
+    chosen_pangram = random.choice(valid_pangram_candidates) # Use random choice again
+    # --- END HARDCODING REMOVAL ---
+    
+    # --- Normalize the letters from the chosen pangram --- START
+    original_letters = set(chosen_pangram)
+    normalized_letters_set = {normalize_word(l) for l in original_letters}
+    # --- Normalize the letters from the chosen pangram --- END
+
+    # Ensure the chosen center letter is valid within the normalized set
+    # potential_center_letters_normalized = list(normalized_letters_set)
+    # Check length AFTER normalization, should be 7 now
+    if len(normalized_letters_set) != 7:
+        # This should not happen with the corrected filter, but raise error if it does
+        raise RuntimeError(f"Pangram '{chosen_pangram}' resulted in {len(normalized_letters_set)} unique normalized letters, expected 7.")
+        
+    potential_center_letters_normalized = list(normalized_letters_set) # Convert the 7 normalized letters to a list
+    center_letter_normalized = random.choice(potential_center_letters_normalized)
+    
+    print(f"--- [choose_letters PANGRAM-FIRST] Chosen Pangram: {chosen_pangram}")
+    print(f"--- [choose_letters PANGRAM-FIRST] Original Letters: {original_letters}")
+    print(f"--- [choose_letters PANGRAM-FIRST] Normalized Letters Set: {normalized_letters_set}")
+    print(f"--- [choose_letters PANGRAM-FIRST] Chosen Center (Normalized): {center_letter_normalized}")
 
     end_time = time.time()
-    print(f"--- [choose_letters PANGRAM-FIRST] Success! Chosen Pangram: '{chosen_pangram}'. Time elapsed: {end_time - start_time:.2f} seconds.")
-    print(f"--- [choose_letters PANGRAM-FIRST] Final letters: {''.join(sorted(list(final_letters)))}, Center: {center_letter}")
-
-    return final_letters, center_letter
+    print(f"--- [choose_letters PANGRAM-FIRST] Finished. Time: {end_time - start_time:.4f}s")
+    return normalized_letters_set, center_letter_normalized # Return normalized set and center
 
 
 def find_valid_words(db_path: str, letters: set[str], center_letter: str, active_list_types: list[str]):
@@ -142,27 +163,34 @@ def find_valid_words(db_path: str, letters: set[str], center_letter: str, active
         SELECT word
         FROM words
         WHERE list_type IN ({placeholders})
-          AND INSTR(LOWER(word), LOWER(?)) > 0
           AND LENGTH(word) >= ?
     """
-    query_params = active_list_types + [center_letter, MIN_WORD_LENGTH]
+    query_params = active_list_types + [MIN_WORD_LENGTH]
 
     try:
         cursor.execute(sql_query, query_params)
         candidate_words = cursor.fetchall() # Fetch all potential words
-        print(f"--- [DEBUG find_valid_words] SQL Query Candidates (Center: {center_letter}): {[row[0] for row in candidate_words[:20]]}") # Print first 20 candidates
+        # print(f"--- [DEBUG find_valid_words] SQL Query Candidates (Center: {center_letter}): {[row[0] for row in candidate_words[:20]]}") # Print first 20 candidates
 
-        # Filter candidates in Python
-        allowed_chars = set(letters) # Use a set for efficient lookup
+        # Filter candidates in Python using normalized forms
+        # The input 'letters' set is already normalized by choose_letters
+        normalized_allowed_chars = letters 
+        # The input 'center_letter' is already normalized
+        normalized_center_char = center_letter 
+
         for row in candidate_words:
-            word = row[0]
-            # Check if all characters in the word are within the allowed letters
-            if all(char in allowed_chars for char in word):
-                valid_solutions.add(word)
-                # Add to the normalization map
-                normalized_form = normalize_word(word)
-                # If collision, last one wins (simple approach)
-                normalized_solution_map[normalized_form] = word
+            word = row[0] # Original word with macrons
+            normalized_word = normalize_word(word) # Normalize the candidate
+
+            # Check 1: Does the NORMALIZED word contain the NORMALIZED center letter?
+            if normalized_center_char not in normalized_word:
+                continue # Skip if center letter check fails
+            
+            # Check 2: Are all characters in the NORMALIZED word within the NORMALIZED allowed set?
+            if all(normalized_char in normalized_allowed_chars for normalized_char in normalized_word):
+                valid_solutions.add(word) # Add the ORIGINAL word
+                # Add to the normalization map (using normalized form as key)
+                normalized_solution_map[normalized_word] = word
 
         print(f"Found {len(valid_solutions)} valid words from DB query and filtering.")
         print(f"Created normalization map with {len(normalized_solution_map)} entries.") # Log map size

@@ -1,10 +1,24 @@
+/* --- Color Palette --- */
+:root {
+    --color-deep-teal: #00695C;
+    --color-darker-teal: #004D40;
+    --color-pale-teal: #E0F2F1;
+    --color-highlight-pale: #B2DFDB; /* Teal 100 */
+    --color-pink-clay: #FF8A80; /* Red A100 */
+    --color-text-dark: #333333;
+    --color-text-light: #FFFFFF;
+    --color-border: #EEEEEE;
+    --color-border-medium: #BDBDBD;
+    --color-background-outer: #1a1a1a;
+}
+
 /* Basic styling */
 body {
     font-family: 'Poppins', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #1a1a1a; /* Dark background for letterboxing */
-    color: #333;
+    background-color: var(--color-background-outer); /* Dark letterbox */
+    color: var(--color-text-dark); /* Default text color */
     /* Center the aspect ratio wrapper */
     display: flex;
     justify-content: center;
@@ -30,82 +44,265 @@ h1 {
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     position: relative;
-    background-color: #ffffff; /* Background now on wrapper */
+    background-color: var(--color-pale-teal); /* Background now pale teal */
 }
 
 /* Game panel fills wrapper, uses flex column */
 .game-panel {
     width: 100%;
     height: 100%;
-    padding: 3vh 15px 15px 15px; /* Use vh for top padding */
+    padding: 15px; /* Simplified padding */
     border: none;
     border-radius: 0;
     box-shadow: none;
     margin: 0;
-    overflow: hidden; /* Prevent internal scroll */
+    /* overflow: hidden; */ /* Allow scrolling if content exceeds height */
+    overflow-y: auto; /* Explicitly allow vertical scroll if needed */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    /* No background needed, inherits from wrapper */
 }
 
-/* Remove general child selector spacing */
-/* Adjust spacing/sizing of children */
-.game-info {
-    display: flex; /* Use Flexbox */
-    justify-content: space-around; /* Distribute items */
-    align-items: center; /* Align items vertically */
-    /* Removed grid properties */
-    gap: 0; /* Remove grid gap */
-    width: 100%; /* Span width within parent */
-    margin-bottom: 20px; /* Increase spacing below */
-    padding-bottom: 15px; /* Padding for border */
-    border-bottom: 1px solid #e9ecef; /* Subtle bottom border */
-    text-align: center;
-    /* Styles below are fine */
-    border: none;
-    box-shadow: none;
-    background: none;
-    padding: 0 0 15px 0; /* Only bottom padding */
-    border-radius: 0;
+/* Panel Header (contains buttons) */
+.panel-header {
+    display: flex;
+    justify-content: center; /* Center buttons container */
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
 }
 
-.info-item {
+/* Container for top buttons */
+.header-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    /* margin-bottom: 15px; */ /* Remove margin */
+    width: 100%;
+}
+
+/* Style Header Buttons (Now use base button styles) */
+.header-button {
+    /* Inherit from base button style below */
+    /* Specific overrides removed, handled by base + removing specific bg colors */
+    flex-grow: 1; /* Keep flex behavior */
+    max-width: 180px;
+}
+
+/* Specific background colors REMOVED */
+/* #new-game-button.header-button { ... } */
+/* #new-game-button.header-button:hover { ... } */
+/* #show-found-words-button.header-button { ... } */
+/* #show-found-words-button.header-button:hover { ... } */
+
+/* Message Area */
+#message-area {
+    min-height: 1.5em;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--color-text-dark); /* Default message color */
+}
+
+/* Recent Words Ticker */
+.recent-words-ticker {
+    height: 1.5em;
+    line-height: 1.5em;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-bottom: 15px;
+    padding: 0 10px;
+    color: var(--color-text-dark); /* Slightly darker than default grey */
+    font-size: 0.9em;
+    text-align: right;
+    position: relative;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.recent-words-ticker span {
+    margin-left: 10px;
+    display: inline-block;
+}
+.recent-words-ticker span:first-child {
+    margin-left: 0;
+}
+.ticker-placeholder {
+    color: var(--color-border-medium); /* Grey placeholder */
+}
+
+/* Interaction Area (takes remaining space) */
+.interaction-area {
+    flex-grow: 1; /* Take remaining vertical space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center items vertically */
+    align-items: center;
+    min-height: 0; /* Allow shrinking */
+}
+
+.hive-container {
+    max-width: 280px; /* Slightly smaller max */
+    width: 70%;
+    margin: 15px auto 15px auto; /* Reduced vertical margins */
+    flex-shrink: 0;
+}
+
+.current-guess-display {
+    min-height: 30px;
+    font-size: 1.6em; /* Slightly smaller */
+    font-weight: 600;
+    margin: 0 auto 15px auto; /* Reduced bottom margin */
+    padding-bottom: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+    letter-spacing: 3px;
+    cursor: text;
+    outline: none;
+    flex-shrink: 0;
+}
+
+.controls {
+    margin-bottom: 10px; /* Reduced bottom margin */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* REMOVE Old Game Actions Styles */
+/* .game-actions { ... } */
+/* REMOVE Settings Button Styles */
+/* #settings-button { ... } */
+/* REMOVE Settings Modal Styles */
+/* #settings-modal { ... } */
+/* .settings-modal-content { ... } */
+/* .word-list-settings { ... } */
+/* .settings-update-button { ... } */
+
+/* --- New Game Info Section Styles --- */
+.game-info-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 10px; /* Horizontal padding */
-    position: relative; /* For pseudo-element border */
+    gap: 5px; /* Reduced space between the two panels */
+    width: 100%;
+    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
-/* Add vertical separator */
-.info-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    right: -1px;
-    top: 15%;
-    bottom: 15%;
-    width: 1px;
-    background-color: #e9ecef;
+/* Panel 1: Score and Rank */
+.score-rank-panel {
+    display: flex;
+    justify-content: space-around; /* Space out Score and Rank */
+    align-items: baseline; /* Align text baseline */
+    width: 90%;
+    max-width: 350px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
 }
 
-.info-label {
-    font-size: 0.75em;
-    color: #6c757d;
-    margin-bottom: 4px;
+.score-item,
+.rank-item {
+    display: inline-block; /* Keep label and value together */
+}
+
+.info-label-inline,
+.info-value-inline {
+    font-size: 1.1em; /* Same size */
+    font-weight: 600;
+    color: var(--color-text-dark);
+    margin-right: 5px; /* Space between label and value */
+}
+
+.info-label-inline {
+     color: var(--color-text-dark); /* Less muted */
+}
+
+/* Panel 2: Possible/Remaining per Dictionary */
+.possible-remaining-panel {
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.panel-title {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--color-text-dark); /* Less muted */
     text-transform: uppercase;
+    margin-bottom: 8px;
     letter-spacing: 0.5px;
+}
+
+.dict-stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Space between dictionary items */
+}
+
+.dict-stat-item {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center items horizontally */
+    gap: 8px; /* Space elements within item */
+    font-size: 0.9em;
+    color: var(--color-text-dark);
+}
+
+.dict-icon-area {
+    display: inline-flex; /* Keep icon centered */
+    align-items: center;
+    width: 20px; /* Fixed width for alignment */
+    justify-content: center;
+}
+
+.dict-icon-emoji {
+    font-size: 1.1em; /* Slightly larger emoji */
+}
+
+.dict-icon-img {
+    height: 1.1em; /* Control image height */
+    width: auto; /* Maintain aspect ratio */
+    vertical-align: middle;
+}
+
+.dict-label {
     font-weight: 600;
 }
 
-.info-value {
-    font-size: 1.1em;
-    font-weight: 600;
-    color: #343a40;
+.dict-counts {
+    /* Style for the 'found / total found' part */
 }
 
-/* Removed specific styles for score/rank */
-/* #score, #rank { ... } */
+.dict-found-count,
+.dict-total-count,
+.dict-remaining-count {
+    font-weight: bold;
+}
+
+.dict-remaining-count {
+    /* Optional: different color for remaining */
+    /* color: var(--color-deep-teal); /* Use teal instead of cyan */
+    /* Reverting to default text color for now */
+    color: var(--color-text-dark);
+}
+
+/* REMOVE dictionary stat item styles */
+/* .dictionary-stat-item { ... } */
+/* .dictionary-stat-item .info-label { ... } */
+/* .info-icon { ... } */
+/* .info-icon.dict-icon-img { ... } */
+/* .info-icon.dict-icon-emoji { ... } */
+/* .dictionary-stat-item .info-value { ... } */
+/* .dictionary-stat-item .remaining-label { ... } */
+/* .dictionary-stat-item .found-count { ... } */
 
 .hive-container {
     max-width: 300px; /* Keep a max pixel size */
@@ -166,47 +363,57 @@ h1 {
 
 /* Removed specific styles for #show-found-words-button */
 
-/* Base Button Styles - Apply to the modal button too */
+/* Base Button Styles - Applied Everywhere */
 .controls button,
-.game-actions button,
-#show-found-words-button { /* Added button to base style */
+.header-button, /* Add .header-button to base */
+.button-primary.modal-button /* Add modal primary button */
+{
     padding: 10px 18px;
-    margin-left: 8px;
     cursor: pointer;
-    color: white;
+    background-color: var(--color-deep-teal);
+    color: var(--color-text-light);
     border: none;
     border-radius: 5px;
     font-size: 0.95em;
     font-weight: 600;
     transition: background-color 0.2s ease, transform 0.1s ease;
+    /* Remove margin-left from base, handle with gap/justify-content */
+    margin-left: 0;
 }
-/* Ensure first button in controls doesn't have left margin */
-.controls button:first-child,
-#show-found-words-button { /* Remove margin from this button too */
-     margin-left: 0;
+/* Hover / Active / Focus States */
+.controls button:hover,
+.header-button:hover,
+.button-primary.modal-button:hover
+{
+    background-color: var(--color-darker-teal);
 }
-
 
 .controls button:active,
-.game-actions button:active,
-#show-found-words-button:active {
+.header-button:active,
+.button-primary.modal-button:active
+{
     transform: scale(0.98);
 }
 
 .controls button:focus-visible,
-.game-actions button:focus-visible,
-#show-found-words-button:focus-visible {
-     outline: 2px solid #0056b3;
+.header-button:focus-visible,
+.button-primary.modal-button:focus-visible
+{
+     outline: 2px solid var(--color-deep-teal);
      outline-offset: 2px;
 }
 
-/* Assign a background color - let's reuse shuffle cyan */
-#show-found-words-button {
-     background-color: #17a2b8; /* Bootstrap cyan */
-}
-#show-found-words-button:hover {
-     background-color: #138496;
-}
+/* Remove specific background colors overrides - now handled by base */
+/* #show-found-words-button { ... } */
+/* #show-found-words-button:hover { ... } */
+/* #submit-guess { ... } */
+/* #submit-guess:hover { ... } */
+/* #delete-char { ... } */
+/* #delete-char:hover { ... } */
+/* #shuffle-letters { ... } */
+/* #shuffle-letters:hover { ... } */
+/* #new-game-button { ... } */
+/* #new-game-button:hover { ... } */
 
 /* Remove old #found-words-list */
 #found-words-list {
@@ -254,17 +461,20 @@ h1 {
 /* Apply pointer cursor only to groups with letters */
 .hive-cell-group[data-letter] {
     cursor: pointer;
-    transition: transform 0.1s ease-out;
+    transition: transform 0.1s ease-out; /* Keep transition if other hover effects use it */
 }
 
+/* Remove or comment out the problematic :active rule */
+/*
 .hive-cell-group[data-letter]:active {
-    transform: scale(0.95); /* Slight shrink on click */
+    transform: scale(0.95); // This conflicts with SVG transform attribute
 }
+*/
 
 /* --- Center Cell --- */
 .hive-cell.center {
-    fill: #f9a825; /* Yellow background */
-    stroke: #e69500; /* Darker yellow border */
+    fill: var(--color-deep-teal); /* Use deep teal */
+    stroke: var(--color-darker-teal); /* Darker teal border */
     stroke-width: 1;
 }
 
@@ -274,7 +484,7 @@ h1 {
 
 /* --- Outer Segments --- */
 .hive-segment-path {
-    stroke: #cccccc; /* Light grey border for segments */
+    stroke: var(--color-border-medium); /* Use medium grey border */
     stroke-width: 1px;
     /* Default fill will be handled by alternating colors */
     transition: filter 0.2s ease;
@@ -282,11 +492,11 @@ h1 {
 
 /* Alternating Segment Colors */
 .outer-segment-group:nth-child(odd) .hive-segment-path {
-    fill: #ffffff; /* White */
+    fill: var(--color-text-light); /* White */
 }
 
 .outer-segment-group:nth-child(even) .hive-segment-path {
-    fill: #fffacd; /* Pale Yellow (Lemon Chiffon) */
+    fill: var(--color-pale-teal); /* Use pale teal */
 }
 
 /* Segment Hover Effect (apply brightness filter) */
@@ -299,7 +509,7 @@ h1 {
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
     font-size: 18px; /* Adjusted base size */
-    fill: #333; /* Dark grey text */
+    fill: var(--color-text-dark); /* Dark grey text */
     pointer-events: none; /* Ignore pointer events on text itself */
     -webkit-user-select: none; /* Disable text selection */
     -moz-user-select: none;
@@ -309,7 +519,7 @@ h1 {
 
 /* Center Letter Specifics */
 .center-letter {
-    fill: #ffffff; /* White text on yellow background */
+    fill: var(--color-text-light); /* White text on teal background */
     font-size: 20px; /* Slightly larger center letter */
 }
 
@@ -339,15 +549,15 @@ h1 {
 }
 
 .message-valid {
-    color: green;
+    color: var(--color-deep-teal);
 }
 
 .message-invalid, .message-error {
-    color: red;
+    color: var(--color-pink-clay);
 }
 
 .message-finished {
-    color: blue;
+    color: var(--color-deep-teal);
 }
 
 .found-words h2 {
@@ -356,7 +566,7 @@ h1 {
     text-align: center;
     font-size: 1.1em; /* Slightly smaller header */
     font-weight: 600;
-    color: #495057; /* Slightly muted color */
+    color: var(--color-text-dark);
 }
 
 /* --- Responsive adjustments --- */
@@ -385,7 +595,7 @@ h1 {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+    background-color: rgba(0, 0, 0, 0.6); /* Keep dark overlay */
     z-index: 1000; /* Sit on top */
     justify-content: center; /* Center content horizontally */
     align-items: center; /* Center content vertically */
@@ -396,50 +606,99 @@ h1 {
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: var(--color-pale-teal); /* Use pale teal */
     padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    width: 90%;
+    width: 85%;
     max-width: 450px;
-    max-height: 80vh;
-    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     position: relative;
+    max-height: 80vh;
     box-sizing: border-box;
+}
+
+.found-words-modal-content {
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-content h2 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    color: var(--color-text-dark);
     text-align: center;
-    font-weight: 600;
-    color: #333;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 15px;
+}
+
+/* Style the container for list and definition */
+.found-words-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    min-height: 200px;
 }
 
 #modal-found-words-list {
     list-style: none;
-    padding: 0;
+    padding: 10px 10px 0 10px;
     margin: 0;
-    column-count: 2;
-    column-gap: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 
 #modal-found-words-list li {
-    margin-bottom: 5px;
-    font-size: 0.95em;
-    cursor: pointer; /* Add cursor pointer to indicate clickability */
+    padding: 4px 0;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 3px;
+    padding-left: 8px;
 }
 
-/* Style for the dynamically added definition */
-.definition-display {
-    display: block; /* Ensure it takes its own line */
-    margin-top: 4px; /* Space below the word */
-    padding-left: 10px; /* Indent the definition */
-    font-size: 0.85em; /* Smaller font for definition */
-    color: #555; /* Grey text */
-    font-style: italic;
-    cursor: default; /* Normal cursor for the text */
+#modal-found-words-list li:hover {
+    background-color: var(--color-highlight-pale); /* Use highlight pale teal */
 }
+
+/* Style for the selected word */
+#modal-found-words-list li.selected-word {
+    background-color: var(--color-highlight-pale); /* Use highlight pale teal */
+    font-weight: 600;
+    color: var(--color-text-dark); /* Ensure text is still dark */
+}
+
+/* Style the definition area */
+#modal-definition-area {
+    padding: 5px 10px 15px 10px;
+    overflow-y: auto;
+    font-size: 0.95em;
+    line-height: 1.5;
+    min-height: 50px;
+    max-height: 150px;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+/* Style placeholder text within definition area */
+#modal-definition-area .placeholder {
+    color: var(--color-border-medium);
+    font-style: italic;
+    text-align: center;
+    margin-top: 30px;
+}
+
+#modal-definition-area .placeholder.loading {
+    font-style: normal;
+}
+
+#modal-definition-area .placeholder.error {
+    color: var(--color-pink-clay);
+    font-style: normal;
+    font-weight: bold;
+}
+
+/* Remove old definition display style */
+/* .definition-display { ... } */
 
 .modal-close-button {
     position: absolute;
@@ -448,19 +707,19 @@ h1 {
     background: none;
     border: none;
     font-size: 2.0em;
-    color: #6c757d;
+    color: var(--color-border-medium);
     cursor: pointer;
     line-height: 1;
     padding: 0;
 }
 
 .modal-close-button:hover {
-    color: #343a40;
+    color: var(--color-text-dark);
 }
 
 .game-actions {
-    margin-top: auto; /* Push to bottom */
-    padding-top: 15px; /* Space above button */
+    margin-top: auto;
+    padding-top: 15px;
     margin-bottom: 0;
     text-align: center;
     flex-shrink: 0;
@@ -473,10 +732,9 @@ h1 {
     overflow: hidden;
     white-space: nowrap;
     margin-bottom: 10px;
-    /* background-color: #f8f9fa; */ /* Removed background */
     border-radius: 4px;
     padding: 0 10px;
-    color: #495057;
+    color: var(--color-text-dark);
     font-size: 0.9em;
     text-align: right;
     position: relative;
@@ -491,130 +749,18 @@ h1 {
     margin-left: 0;
 }
 .ticker-placeholder {
-    color: #adb5bd;
+    color: var(--color-border-medium);
 }
 
-/* --- Re-add specific button background colors --- */
-
-#submit-guess {
-    background-color: #28a745; /* Bootstrap green */
-}
-#submit-guess:hover {
-    background-color: #218838;
-}
-
-#delete-char {
-    background-color: #ffc107; /* Bootstrap yellow */
-    color: #333; /* Darker text for yellow */
-}
-#delete-char:hover {
-    background-color: #e0a800;
-}
-
-#shuffle-letters {
-    background-color: #17a2b8; /* Bootstrap cyan */
-}
-#shuffle-letters:hover {
-    background-color: #138496;
-}
-
-#new-game-button {
-    background-color: #dc3545; /* Bootstrap red */
-    /* Use base padding/font size */
-}
-#new-game-button:hover {
-    background-color: #c82333;
-}
-
-/* --- Settings Modal Styles --- */
-
-/* Ensure the settings button fits in with others */
-#settings-button {
-    background-color: #6c757d; /* Bootstrap secondary grey */
-    margin-right: 8px; /* Space between settings and new game */
-}
-
-#settings-button:hover {
-    background-color: #5a6268;
-}
-
-/* Style the settings modal like the found words modal */
-#settings-modal {
-    /* Uses .modal-overlay styles */
-}
-
-.settings-modal-content {
-     /* Uses .modal-content styles */
-     /* Add specific overrides if needed */
-     max-height: 70vh; /* Prevent it getting too tall */
-}
-
-.settings-modal-content h2 {
-    /* Inherits from .modal-content h2 */
-}
-
-.settings-close-button {
-    /* Inherits from .modal-close-button */
-}
-
-/* Style the form inside the modal */
-.word-list-settings fieldset {
-    border: 1px solid #ced4da;
-    padding: 15px 20px;
-    border-radius: 5px;
-    margin-top: 15px;
-}
-
-.word-list-settings legend {
-    font-weight: 600;
-    padding: 0 10px;
-    color: #495057;
-}
-
-.word-list-settings div {
-    margin-bottom: 10px;
-}
-
-.word-list-settings label {
-    margin-left: 8px;
-    cursor: pointer;
-}
-
-.word-list-settings input[type="checkbox"] {
-    cursor: pointer;
-}
-
-/* Style the update button */
-.settings-update-button {
-    /* Inherit base button styles maybe? Or define specific */
-    display: block; /* Make it block level */
-    width: 100%; /* Full width inside fieldset */
-    margin-top: 15px;
-    padding: 10px 18px;
-    cursor: pointer;
-    background-color: #007bff; /* Bootstrap primary blue */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.95em;
-    font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.settings-update-button:hover {
-    background-color: #0056b3;
-}
-
-.settings-update-button:active {
-    transform: scale(0.98);
-}
-
-.settings-update-button:focus-visible {
-     outline: 2px solid #0056b3;
-     outline-offset: 2px;
-}
-
-/* --- End Settings Modal Styles --- */
+/* --- REMOVE specific button background colors --- */
+/* #submit-guess { ... } */
+/* #submit-guess:hover { ... } */
+/* #delete-char { ... } */
+/* #delete-char:hover { ... } */
+/* #shuffle-letters { ... } */
+/* #shuffle-letters:hover { ... } */
+/* #new-game-button { ... } */
+/* #new-game-button:hover { ... } */
 
 /* --- Dictionary Modal Specific Styles --- */
 
@@ -622,17 +768,17 @@ h1 {
 .dictionary-options {
     margin-top: 15px;
     margin-bottom: 25px;
-    text-align: left; /* Align checkboxes left */
+    text-align: left;
 }
 
 .dictionary-options p {
     margin-bottom: 10px;
     font-weight: 600;
-    color: #333;
+    color: var(--color-text-dark);
 }
 
 .dictionary-options label {
-    display: block; /* Each checkbox on a new line */
+    display: block;
     margin-bottom: 8px;
     cursor: pointer;
     font-size: 0.95em;
@@ -643,51 +789,55 @@ h1 {
     cursor: pointer;
 }
 
+/* Style for icons (both emoji and image) */
+.dict-icon-emoji,
+.dict-icon-img {
+    display: inline-block; /* Allows setting size/margin */
+    margin-right: 6px; /* Space between icon and text */
+    vertical-align: middle; /* Align with text */
+}
+
+/* Specific styling for image icons */
+.dict-icon-img {
+    height: 1.2em; /* Control image height based on text size */
+    width: auto; /* Maintain aspect ratio */
+}
+
+/* Specific styling for emoji icons (optional, e.g., font size) */
+.dict-icon-emoji {
+    font-size: 1.1em; /* Slightly larger emoji */
+}
+
 /* Style modal action buttons if needed */
 .modal-actions {
-    text-align: right; /* Align button(s) to the right */
+    text-align: right;
     margin-top: 20px;
 }
 
 /* Style for the primary action button in the modal */
-.button-primary.modal-button {
-    /* Define styles or reuse existing button styles */
-    padding: 10px 18px;
-    cursor: pointer;
-    background-color: #007bff; /* Bootstrap primary blue */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.95em;
-    font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-.button-primary.modal-button:hover {
-    background-color: #0056b3;
-}
-.button-primary.modal-button:active {
-    transform: scale(0.98);
-}
-.button-primary.modal-button:focus-visible {
-     outline: 2px solid #0056b3;
-     outline-offset: 2px;
-}
+/* .button-primary.modal-button is now covered by base button styles */
 
 /* --- SVG Animation Styles --- */
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    /* Rotate multiple times for a better effect */
+    to {
+        transform: rotate(1080deg); /* 3 full rotations */
+    }
 }
 
-/* Apply to the group containing the segments */
-.outer-segments-group.spinning {
-    animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Example timing and easing */
-    transform-origin: center; /* Ensure it spins around the center */
+/* Apply to the new inner group containing the segments */
+.spinning-part.spinning {
+    /* Correct origin, new duration, weighty easing, multiple rotations */
+    animation: spin 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    /* Use 'forwards' to keep the final state (1080deg) until JS removes the class */
+    transform-origin: 0px 0px; /* Try rotating around the element's own top-left (if it's already translated) */
 }
 
 /* Style for letters during reveal (optional fade-in/scale) */
 .hive-letter {
-    /* ... existing styles ... */
     opacity: 1;
     transform: scale(1);
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
@@ -696,7 +846,73 @@ h1 {
 .hive-letter.hidden {
     opacity: 0;
     transform: scale(0.5);
-    transition: none; /* No transition when initially hiding */
+    transition: none;
 }
 
-/* Keep existing styles below */ 
+/* Keep existing styles below */
+
+/* Make Rank clickable */
+.rank-clickable-area {
+    cursor: pointer;
+    display: inline-block; /* Ensure it behaves like the span it replaced */
+    /* Add padding/margin if needed for click area */
+}
+.rank-clickable-area:hover .info-value-inline {
+    text-decoration: underline; /* Indicate clickability on hover */
+}
+
+.score-item,
+.rank-item { 
+    /* Note: .rank-item class might no longer be used if div replaces span */
+    display: inline-block; 
+}
+
+/* Ranks Modal Specific Styles */
+.ranks-modal-content { 
+    /* Can inherit general modal styles */
+    /* Add specific overrides if needed */
+}
+
+#ranks-list-container {
+    margin-top: 15px;
+}
+
+#ranks-list-container p {
+    font-size: 0.9em;
+    color: var(--color-text-dark);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+#ranks-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+}
+
+#ranks-list li {
+    display: flex; /* ADDED: Use flexbox */
+    justify-content: space-between; /* ADDED: Push items apart */
+    align-items: baseline; /* ADDED: Align text baseline */
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.95em;
+}
+
+#ranks-list li:last-child {
+    border-bottom: none;
+}
+
+#ranks-list .rank-points { /* RENAMED from rank-percentage */
+    /* display: inline-block; REMOVED */
+    /* width: 50px; REMOVED */
+    font-weight: 600;
+    margin-left: 10px; /* ADDED: Space from rank name */
+    /* text-align: right; REMOVED (default for end item in space-between) */
+    white-space: nowrap; /* ADDED: Prevent points wrapping */
+}
+
+#ranks-list .rank-name {
+    /* No specific styles needed, flex handles alignment */
+    text-align: left; /* Ensure left alignment */
+} 

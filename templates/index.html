@@ -13,157 +13,149 @@
     <div class="aspect-ratio-wrapper">
         <!-- Main wrapper -->
         <div class="game-panel">
-            <div class="game-info"> <!-- Moved inside game-panel -->
-                <div class="info-item">
-                    <span class="info-label">Score</span>
-                    <span id="score" class="info-value">{{ score }}</span>
+            <div class="panel-header"> <!-- Renamed for clarity -->
+                <div class="header-buttons">
+                    <button id="new-game-button" class="header-button">New Game</button>
+                    <button id="show-found-words-button" class="header-button">
+                        Found Words (<span id="found-words-count">{{ display_stats | sum(attribute='found') }}</span>)
+                    </button>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Rank</span>
-                    <span id="rank" class="info-value">{{ rank }}</span>
+            </div>
+            
+            <!-- Reorganized Game Info section -->
+            <div class="game-info-container"> <!-- New overall container -->
+                <div class="score-rank-panel"> <!-- Panel 1: Score & Rank -->
+                    <span class="info-item score-item">
+                        <span class="info-label-inline">Score:</span> 
+                        <span id="score" class="info-value-inline">{{ score }}</span>
+                    </span>
+                    <div id="rank-clickable-area" class="rank-clickable-area"> <!-- Wrap rank -->
+                        <span class="info-label-inline">Rank:</span> 
+                        <span id="rank" class="info-value-inline">{{ rank }}</span>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Possible</span>
-                    <span id="total-words" class="info-value">{{ total_words }}</span>
+                
+                {% if display_stats %}
+                <div class="possible-remaining-panel"> <!-- Panel 2: Possible/Remaining Per Dictionary -->
+                     <div class="dict-stats-list">
+                        {% for stat in display_stats %}
+                        <div class="dict-stat-item" data-list-key="{{ stat.key }}">
+                            <span class="dict-icon-area">
+                                {% if stat.icon_type == 'emoji' %}
+                                    <span class="dict-icon-emoji">{{ stat.icon_value }}</span>
+                                {% elif stat.icon_type == 'image' and stat.icon_value %}
+                                    <img src="{{ stat.icon_value }}" alt="{{ stat.label }} icon" class="dict-icon-img">
+                                {% endif %}
+                            </span>
+                            <span class="dict-label">{{ stat.label }}:</span>
+                            <span class="dict-counts">
+                                <span class="dict-found-count" id="found-count-{{ stat.key }}">{{ stat.found }}</span> / <span class="dict-total-count">{{ stat.total }}</span> found
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Remaining</span>
-                    <span id="words-remaining" class="info-value">{{ total_words - found_words|length }}</span>
-                </div>
+                {% endif %}
             </div>
 
             <div id="message-area">
                 {{ message }}
             </div>
 
-            <div class="hive-container">
-                {# Adjusted viewBox for potential clipping #}
-                <svg id="hive-svg" viewBox="-2 -2 154 154">
-                    {# --- SVG Definitions --- #}
-                    <defs>
-                        {# Define colors - these could also come from backend if needed #}
-                        {% set pale_yellow = '#fffacd' %}
-                        {% set white_color = '#ffffff' %}
-                    </defs>
-
-                    {# --- Parameters (now mostly coming from backend) --- #}
-                    {# Removed Jinja calculations for angles, radii, points #}
-
-                    {# --- Center Circle --- #}
-                    {# Use viewBox center passed from backend for transform #}
-                    {# Add conditional rendering: Only show if center_letter exists #}
-                    {% if center_letter %}
-                    <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
-                        {# Use center_radius passed from backend #}
-                        <circle class="hive-cell center" r="{{ center_radius }}"></circle>
-                        <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
-                    </g>
-                    {% endif %}
-
-                    {# --- Outer Segments and Letters --- #}
-                    {# Use viewBox center passed from backend for transform #}
-                    {# Add conditional rendering: Only show if outer_segments_data exists and is not empty #}
-                    {% if outer_segments_data %}
-                    <g class="outer-segments-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})">
-                        {# Add an inner group specifically for the spinning animation #}
-                        <g class="spinning-part">
-                            {# Loop through the data calculated in Python #}
-                            {% for segment_data in outer_segments_data %}
-                                {# Add conditional rendering: Only process if segment_data.letter exists #}
-                                {% if segment_data.letter %}
-                                <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}">
-                                    <path class="hive-segment-path"
-                                          d="{{ segment_data.segment_path }}"
-                                          fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
-                                    <text class="hive-letter outer-letter"
-                                          id="outer-letter-{{ loop.index0 }}"
-                                          x="{{ segment_data.x }}"
-                                          y="{{ segment_data.y }}"
-                                          text-anchor="middle"
-                                          dominant-baseline="middle">
-                                        {{ segment_data.letter }}
-                                    </text>
-                                </g>
-                                {% endif %}
-                            {% endfor %}
-                        </g> {# End of spinning-part group #}
-                    </g>
-                    {% endif %}
-                </svg>
-            </div>
-
-            <div class="current-guess-display" id="current-guess-display" tabindex="0">
-                <!-- Current word built from clicks/keys -->
-                <span>&nbsp;</span> <!-- Placeholder to maintain height -->
-            </div>
-
-            <div class="controls">
-                <button id="submit-guess">Enter</button>
-                <button id="delete-char">Delete</button>
-                <button id="shuffle-letters">Shuffle</button>
-            </div>
-
-            <!-- Recent Words Ticker -->
+            <!-- Recent Words Ticker (Keep it here) -->
             <div class="recent-words-ticker" id="recent-words-ticker">
-                 <span class="ticker-placeholder">&nbsp;</span> <!-- Placeholder -->
+                <span class="ticker-placeholder">&nbsp;</span> <!-- Placeholder -->
             </div>
 
-            <div class="found-words">
-                <!-- Replaced h2 and ul with a trigger button -->
-                <button id="show-found-words-button" class="button-secondary">
-                    Found Words (<span id="found-words-count">{{ found_words|length }}</span>)
-                </button>
-            </div>
+            <!-- Hive, Guess Display, Controls - Moved Down -->
+            <div class="interaction-area"> <!-- New container for bottom elements -->
+                <div class="hive-container">
+                    {# Adjusted viewBox for potential clipping #}
+                    <svg id="hive-svg" viewBox="-2 -2 154 154">
+                        {# --- SVG Definitions --- #}
+                        <defs>
+                            {# Define colors - these could also come from backend if needed #}
+                            {% set pale_yellow = '#fffacd' %}
+                            {% set white_color = '#ffffff' %}
+                        </defs>
 
-            <div class="game-actions">
-                <button id="settings-button" class="button-secondary">Settings</button>
-                <button id="new-game-button">New Game</button>
+                        {# --- Parameters (now mostly coming from backend) --- #}
+                        {# Removed Jinja calculations for angles, radii, points #}
+
+                        {# --- Center Circle --- #}
+                        {# Use viewBox center passed from backend for transform #}
+                        {# Add conditional rendering: Only show if center_letter exists #}
+                        {% if center_letter %}
+                        <g class="hive-cell-group center-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})" data-letter="{{ center_letter }}">
+                            {# Use center_radius passed from backend #}
+                            <circle class="hive-cell center" r="{{ center_radius }}"></circle>
+                            <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle" dy="0.1em">{{ center_letter.upper() }}</text>
+                        </g>
+                        {% endif %}
+
+                        {# --- Outer Segments and Letters --- #}
+                        {# Use viewBox center passed from backend for transform #}
+                        {# Add conditional rendering: Only show if outer_segments_data exists and is not empty #}
+                        {% if outer_segments_data %}
+                        <g class="outer-segments-group" transform="translate({{ viewBox_center_x }}, {{ viewBox_center_y }})">
+                            {# Add an inner group specifically for the spinning animation #}
+                            <g class="spinning-part">
+                                {# Loop through the data calculated in Python #}
+                                {% for segment_data in outer_segments_data %}
+                                    {# Add conditional rendering: Only process if segment_data.letter exists #}
+                                    {% if segment_data.letter %}
+                                    <g class="hive-cell-group outer-segment-group" data-letter="{{ segment_data.letter.lower() }}">
+                                        <path class="hive-segment-path"
+                                              d="{{ segment_data.segment_path }}"
+                                              fill="{{ white_color if loop.index0 % 2 == 0 else pale_yellow }}" />
+                                        <text class="hive-letter outer-letter"
+                                              id="outer-letter-{{ loop.index0 }}"
+                                              x="{{ segment_data.x }}"
+                                              y="{{ segment_data.y }}"
+                                              text-anchor="middle"
+                                              dominant-baseline="middle">
+                                            {{ segment_data.letter }}
+                                        </text>
+                                    </g>
+                                    {% endif %}
+                                {% endfor %}
+                            </g> {# End of spinning-part group #}
+                        </g>
+                        {% endif %}
+                    </svg>
+                </div>
+
+                <div class="current-guess-display" id="current-guess-display" tabindex="0">
+                    <span>&nbsp;</span> <!-- Placeholder to maintain height -->
+                </div>
+
+                <div class="controls">
+                    <button id="delete-char">Delete</button>
+                    <button id="shuffle-letters">Shuffle</button>
+                    <button id="submit-guess">Enter</button>
+                </div>
             </div>
 
         </div> <!-- End of game-panel -->
 
         <!-- Found Words Modal Structure -->
         <div id="found-words-modal" class="modal-overlay">
-            <div class="modal-content">
+            <div class="modal-content found-words-modal-content">
                 <button class="modal-close-button">&times;</button>
-                <h2>Found Words</h2>
-                <ul id="modal-found-words-list">
-                    <!-- Words will be populated here by JS -->
-                    {% for word in found_words %}
-                     <li>{{ word }}</li> {# Keep initial population for no-JS or page load #}
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-
-        <!-- Settings Modal Structure (Initially Hidden) -->
-        <div id="settings-modal" class="modal-overlay">
-            <div class="modal-content settings-modal-content">
-                <button class="modal-close-button settings-close-button">&times;</button>
-                <h2>Settings</h2>
-                <div class="word-list-settings">
-                    <form action="{{ url_for('update_settings') }}" method="post">
-                        <fieldset>
-                            <legend>Optional Word Lists:</legend>
-                            <div>
-                                <input type="checkbox" id="use_nz" name="use_nz" value="true" {% if use_nz %}checked{% endif %}>
-                                <label for="use_nz">NZ English</label>
-                            </div>
-                            <div>
-                                <input type="checkbox" id="use_au" name="use_au" value="true" {% if use_au %}checked{% endif %}>
-                                <label for="use_au">AU English</label>
-                            </div>
-                            <div>
-                                <input type="checkbox" id="use_tr" name="use_tr" value="true" {% if use_tr %}checked{% endif %}>
-                                <label for="use_tr">Te Reo Māori</label>
-                            </div>
-                            <button type="submit" class="button-secondary settings-update-button">Update Lists & New Game</button>
-                        </fieldset>
-                    </form>
+                <h2>Found Words (<span id="modal-found-words-count">{{ found_words|length }}</span>)</h2>
+                <div class="found-words-container">
+                    <div id="modal-definition-area">
+                        <p class="placeholder">Click a word to see its definition.</p>
+                    </div>
+                    <ul id="modal-found-words-list">
+                        <!-- Words will be populated here by JS OR initially by backend -->
+                        {% for word in found_words %}
+                         <li data-word="{{ word }}">{{ word|upper }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
-        <!-- End Settings Modal Structure -->
 
         <!-- Dictionary Selection Modal -->
         <div id="dictionary-modal" class="modal-overlay" style="display: none;"> {# Reuse modal-overlay style, hide initially #}
@@ -182,6 +174,21 @@
             </div>
         </div>
         <!-- End Dictionary Selection Modal -->
+
+        <!-- Ranks Modal -->
+        <div id="ranks-modal" class="modal-overlay"> 
+            <div class="modal-content ranks-modal-content"> 
+                <button class="modal-close-button">&times;</button> 
+                <h2>Ranks</h2>
+                <div id="ranks-list-container">
+                    <p>Percentage of total points needed:</p>
+                    <ul id="ranks-list">
+                        <!-- Ranks will be populated by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- End Ranks Modal -->
 
     </div> <!-- End of aspect-ratio-wrapper -->
 
