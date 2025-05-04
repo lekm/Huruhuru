@@ -266,6 +266,12 @@ h1 {
     fill: #ffe066; /* Yellow fill for center */
 }
 
+.hive-outer-ring {
+    fill: none;
+    stroke: #adb5bd; /* Lighter grey stroke */
+    stroke-width: 1.5;
+}
+
 .hive-cell:hover {
     fill: #e9ecef; /* Slightly darker grey on hover */
 }
@@ -298,7 +304,15 @@ h1 {
 }
 
 .center-letter {
-     /* No specific style needed beyond .hive-letter if centered in circle */
+    fill: #000; /* Ensure center letter has a fill color */
+    /* No specific positioning rules here that override SVG attributes */
+}
+
+.outer-letter-flat {
+    /* Inherits from .hive-letter */
+    fill: #333; /* Example: maybe slightly lighter */
+    cursor: pointer; /* Make text itself look clickable */
+    pointer-events: auto; /* Override none from .hive-letter to allow clicks */
 }
 
 /* Remove old styles for outer letters */

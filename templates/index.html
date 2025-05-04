@@ -46,8 +46,11 @@
                     <!-- Center Circle -->
                     <g class="hive-cell-group center-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})" data-letter="{{ center_letter }}">
                         <circle class="hive-cell center" r="{{ circle_radius }}"></circle>
-                        <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="central">{{ center_letter.upper() }}</text>
+                        <text class="hive-letter center-letter" x="0" y="0" text-anchor="middle" dominant-baseline="middle">{{ center_letter.upper() }}</text>
                     </g>
+
+                    <!-- Visual Outer Ring -->
+                    <circle class="hive-outer-ring" cx="{{ center_pos[0] }}" cy="{{ center_pos[1] }}" r="{{ outer_ring_radius + circle_radius * 0.75 }}"></circle>
 
                     <!-- Outer Letters - Arranged hexagonally using passed positions -->
                     {# Removed horizontal row calculation #}
@@ -62,7 +65,7 @@
                         {% set pos = outer_positions[i] %} {# Use position from backend #}
                         {# {% set pos_x = outer_start_x + i * outer_letter_spacing %} #}
                         {# {% set pos_y = center_pos[1] + circle_radius + outer_y_offset %} #}
-                        <text class="hive-letter outer-letter-flat" x="{{ pos.x }}" y="{{ pos.y }}" text-anchor="middle" dominant-baseline="central" data-letter="{{ letter }}">
+                        <text class="hive-letter outer-letter-flat" x="{{ pos.x }}" y="{{ pos.y }}" text-anchor="middle" dominant-baseline="middle" data-letter="{{ letter }}">
                             {{ letter.upper() }}
                         </text>
                     {% endfor %}
