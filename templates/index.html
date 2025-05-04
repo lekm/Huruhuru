@@ -37,37 +37,29 @@
             </div>
 
             <div class="hive-container">
-                <svg id="hive-svg" viewBox="0 -2 150 157">
-                    <!-- Define the hexagon shape centered at 0,0 with radius 30 -->
-                    <defs>
-                        <polygon id="hexagon" points="30,0 15,25.98 -15,25.98 -30,0 -15,-25.98 15,-25.98" />
-                    </defs>
+                <svg id="hive-svg" viewBox="0 0 150 150"> {# Adjusted viewBox slightly #}
+                    <!-- Define circle properties - radius can be adjusted -->
+                    {% set circle_radius = 25 %}
+                    {% set center_pos = (75, 75) %} {# Center of the viewBox #}
+                    {% set outer_ring_radius = 50 %} {# Distance from center to outer circle centers #}
 
-                    <!-- Center Hexagon -->
-                    {% set center_pos = (75, 77) %}
-                    <g class="hive-cell-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})">
-                        <use xlink:href="#hexagon" class="hive-cell center" data-letter="{{ center_letter }}">
-                            <title>{{ center_letter.upper() }}</title>
-                        </use>
+                    <!-- Center Circle -->
+                    <g class="hive-cell-group center-group" transform="translate({{ center_pos[0] }}, {{ center_pos[1] }})" data-letter="{{ center_letter }}">
+                        <circle class="hive-cell center" r="{{ circle_radius }}"></circle>
                         <text class="hive-letter center-letter" x="0" y="0">{{ center_letter.upper() }}</text>
                     </g>
 
-                    <!-- Outer Hexagons - positions calculated for a 7-hex grid around center -->
-                    {% set positions = [
-                        (center_pos[0], center_pos[1] - 51.96),      
-                        (center_pos[0] + 45, center_pos[1] - 25.98), 
-                        (center_pos[0] + 45, center_pos[1] + 25.98), 
-                        (center_pos[0], center_pos[1] + 51.96),      
-                        (center_pos[0] - 45, center_pos[1] + 25.98), 
-                        (center_pos[0] - 45, center_pos[1] - 25.98)  
-                    ] %}
+                    <!-- Outer Circles - Calculate positions -->
+                    {# Angles in radians for 6 circles #}
+                    {% set angles = [3.14159 * -0.5, 3.14159 * -0.1667, 3.14159 * 0.1667, 3.14159 * 0.5, 3.14159 * 0.8333, 3.14159 * 1.1667] %} {# Approx angles: -90, -30, 30, 90, 150, 210 degrees #}
                     {% for i in range(outer_letters|length) %}
-                        {% set pos = positions[i] %}
+                        {% set angle = angles[i] %}
+                        {# Calculate x, y based on angle and outer_ring_radius #}
+                        {% set pos_x = center_pos[0] + outer_ring_radius * angle | cos %}
+                        {% set pos_y = center_pos[1] + outer_ring_radius * angle | sin %}
                         {% set letter = outer_letters[i] %}
-                         <g class="hive-cell-group" transform="translate({{ pos[0] }}, {{ pos[1] }})">
-                            <use xlink:href="#hexagon" class="hive-cell outer" data-letter="{{ letter }}">
-                                <title>{{ letter.upper() }}</title>
-                            </use>
+                        <g class="hive-cell-group outer-group" transform="translate({{ pos_x | round(2) }}, {{ pos_y | round(2) }})" data-letter="{{ letter }}">
+                             <circle class="hive-cell outer" r="{{ circle_radius }}"></circle>
                             <text class="hive-letter outer-letter" x="0" y="0">{{ letter.upper() }}</text>
                         </g>
                     {% endfor %}

@@ -40,13 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleLetterClick = (event) => {
-        const useElement = event.currentTarget.querySelector('.hive-cell');
-        if (useElement) {
-            const letter = useElement.getAttribute('data-letter');
-            if (letter) {
-                currentGuess += letter;
-                updateGuessDisplay();
-            }
+        const letter = event.currentTarget.getAttribute('data-letter');
+        if (letter) {
+            currentGuess += letter;
+            updateGuessDisplay();
         }
     };
 
@@ -58,11 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const shuffleLetters = () => {
-        const outerGroups = Array.from(document.querySelectorAll('g.hive-cell-group')).filter(g => g.querySelector('.hive-cell.outer'));
+        const outerGroups = Array.from(document.querySelectorAll('g.hive-cell-group.outer-group'));
 
         let lettersData = outerGroups.map((group) => ({
-            letter: group.querySelector('.hive-cell').getAttribute('data-letter'),
-            transform: group.getAttribute('transform')
+            letter: group.getAttribute('data-letter'),
         }));
 
         let shuffledLetters = lettersData.map(d => d.letter);
@@ -73,10 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         outerGroups.forEach((group, index) => {
             const newLetter = shuffledLetters[index];
-            const useElement = group.querySelector('.hive-cell.outer');
             const textElement = group.querySelector('.hive-letter.outer-letter');
-            useElement.setAttribute('data-letter', newLetter);
-            useElement.querySelector('title').textContent = newLetter.toUpperCase();
+            group.setAttribute('data-letter', newLetter);
             textElement.textContent = newLetter.toUpperCase();
         });
     };

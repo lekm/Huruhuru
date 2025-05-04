@@ -248,50 +248,67 @@ h1 {
 
 .hive-cell-group {
     cursor: pointer;
+    transition: transform 0.1s ease-out; /* Add transition for potential hover effect */
 }
 
+/* Remove hexagon definition style */
+/* #hexagon { ... } */
+
 .hive-cell {
-    stroke: #666; /* Slightly softer stroke */
-    stroke-width: 1;
-    fill: #f0f0f0; /* Lighten outer cell color */
-    cursor: pointer;
+    /* Shared styles for center and outer circles */
+    stroke: #495057;
+    stroke-width: 1.5;
+    fill: #f8f9fa; /* Light grey fill */
     transition: fill 0.2s ease;
 }
 
 .hive-cell.center {
-    fill: #fcc419; /* Darken center cell yellow slightly for contrast */
+    fill: #ffe066; /* Yellow fill for center */
 }
 
 .hive-cell:hover {
-    fill: #cccccc; /* Lighten on hover */
+    fill: #e9ecef; /* Slightly darker grey on hover */
 }
 
 .hive-cell.center:hover {
-    fill: #fbc02d; /* Lighten center on hover */
+     fill: #ffd333; /* Darker yellow on hover */
 }
 
+/* Use group hover instead */
 .hive-cell-group:hover .hive-cell.outer {
-    fill: #e0e0e0; /* Adjust hover color */
+    fill: #e9ecef;
 }
 
 .hive-cell-group:hover .hive-cell.center {
-    fill: #fca619; /* Adjust hover color */
+     fill: #ffd333;
 }
 
 .hive-letter {
-    font-size: 22px; /* Reduced size */
-    font-weight: 600; /* Bold */
-    text-anchor: middle;
-    dominant-baseline: central; /* Use central for more precise vertical centering */
-    fill: #212529; /* Darker text for contrast */
-    pointer-events: none; /* Allow clicks to pass through to the hexagon */
+    font-size: 1.6em; /* Adjust as needed */
+    font-weight: 700;
+    fill: #343a40;
+    text-anchor: middle; /* Center horizontally */
+    dominant-baseline: middle; /* Center vertically */
+    pointer-events: none; /* Make text non-interactive */
+    text-transform: uppercase;
+    -webkit-user-select: none; /* Prevent text selection */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .center-letter {
-    /* No specific style needed unless different from outer */
+     /* No specific style needed beyond .hive-letter if centered in circle */
 }
 
-/* --- End Hive Styles --- */
+/* Remove old styles for outer letters */
+/* .outer-letter { ... } */
+
+
+/* --- Guess Display & Messages --- */
+.current-guess-display {
+    /* Styles from before */
+}
 
 .current-guess-display:focus {
     box-shadow: 0 0 0 2px #80bdff; /* Add focus style */
